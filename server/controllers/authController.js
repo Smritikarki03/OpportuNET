@@ -2,104 +2,50 @@ const bcrypt = require('bcryptjs');
 const userModel = require('../models/User');
 const JWT = require('jsonwebtoken');
 const authenticate = require('../middleware/authMiddleware');
-const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+require("dotenv").config();
+const Notification = require('../models/Notification'); // Import Notification model
 
 exports.register = async (req, res) => {
   try {
-    const { fname, lname, email, password, phone, role } = req.body;
+    const { name, email, password, confirmPassword } = req.body;
+
+    // Set default role for Jobseeker
+    const role = "jobseeker"; // Default role for Jobseeker
 
     // Validations
-    if (!fname || !lname || !email || !password || !phone) {
+    if (!name || !email || !password || !confirmPassword) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if password is at least 6 characters long
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password should be at least 6 characters long" });
-    }
-
-    // Check if the user already exists
-    const existingUser = await userModel.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists, please login instead" });
-    }
-
-    // Validate role (default to "jobseeker" if not provided or invalid)
-    const validRoles = ["employer", "jobseeker", "admin"];
-    const assignedRole = validRoles.includes(role) ? role : "jobseeker";
-
-    // Hash the password using bcrypt
-    const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
-
-    // Register the user
-    const user = new userModel({
-      fname,
-      lname,
-      email,
-      phone,
-      password: hashedPassword,
-      role: assignedRole, // Assign validated role or default role
-    });
-    await user.save();
-
-    res.status(201).json({
-      success: true,
-      message: "User registered successfully",
-      user,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ success: false, message: "Error in registration", error });
-  }
-};
-
-// registration
-exports.employerRegister = async (req, res) => {
-  try {
-    const { name, email, password, confirmPassword, companyName, industry, companyLocation, phone, role } = req.body;
-
-    // Validations
-    if (!name || !email || !phone || !password || !confirmPassword || !companyName || !industry || !companyLocation) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    // Check if password is at least 6 characters long
-    if (password.length < 6) {
-      return res.status(400).json({ message: "Password should be at least 6 characters long" });
-    }
-
-    // Check if password and confirmPassword match
+    // Check if password and confirmPass are the same
     if (password !== confirmPassword) {
       return res.status(400).json({ message: "Passwords do not match" });
     }
 
+    // Check if password is at least 6 characters long
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password should be at least 6 characters long" });
+    }
+
     // Check if the user already exists
     const existingUser = await userModel.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists, please login instead" });
     }
 
-    // Validate role (default to "employer" if not provided or invalid)
-    const validRoles = ["employer", "jobseeker", "admin"];
-    const assignedRole = validRoles.includes(role) ? role : "employer";
-
     // Hash the password using bcrypt
     const hashedPassword = await bcrypt.hash(password, 10); // 10 is the salt rounds
 
-    // Register the user
+    // Register the user with isProfileViewed
     const user = new userModel({
       name,
       email,
-      phone,
       password: hashedPassword,
-      confirmPassword: hashedPassword,
-      companyName,
-      industry,
-      companyLocation,
-      role: assignedRole, // Assign validated role or default role
+      role,
+      isProfileViewed: false, // Add this field
     });
-
     await user.save();
 
     res.status(201).json({
@@ -113,42 +59,112 @@ exports.employerRegister = async (req, res) => {
   }
 };
 
+// Employer Registration
+exports.employerRegister = async (req, res) => {
+  try {
+    const { fullname, email, contactnumber, password, confirmpassword, companyname, industry, companylocation, role } = req.body;
+
+    if (!fullname || !email || !contactnumber || !password || !confirmpassword || !companyname || !industry || !companylocation) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+    if (password.length < 6) {
+      return res.status(400).json({ message: "Password should be at least 6 characters long" });
+    }
+
+    const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
+    if (role !== 'employer') {
+      return res.status(400).json({ message: "Invalid role for this route" });
+    }
+
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already exists, please login instead" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = new userModel({
+      name: fullname,
+      email,
+      contactnumber,
+      password: hashedPassword,
+      companyName: companyname,
+      industry,
+      companyLocation: companylocation,
+      role,
+      isApproved: false,
+      isProfileViewed: false, // Set for consistency
+    });
+    await user.save();
+
+    const admin = await userModel.findOne({ role: 'admin' });
+    if (!admin) {
+      return res.status(500).json({ message: "Admin not found. Unable to send notification." });
+    }
+
+    const notification = new Notification({
+      message: `A new Employer ${fullname} has registered and is awaiting approval.`,
+      adminId: admin._id, // Use admin._id instead of admin object
+      employerId: user._id,
+    });
+    await notification.save();
+
+    res.status(201).json({
+      success: true,
+      message: "Employer registered successfully. Await admin approval.",
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.error("Error in Employer registration:", error);
+    res.status(500).json({ success: false, message: "Error in registration", error: error.message });
+  }
+};
 
 // login
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
     if (!email || !password) {
       return res.status(400).json({ message: 'Email and password are required' });
     }
 
-    // Check if the user exists in the database
     const user = await userModel.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Compare the entered password with the hashed password stored in the database
+    if (user.role === 'employer' && !user.isApproved) {
+      return res.status(403).json({ message: 'Admin needs to approve your account before you can log in.' });
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid email or password' });
     }
 
-    // Create a JWT token
-    const token =   JWT.sign(
-      { id: user._id, email: user.email, role: user.role }, // Payload (user info)
-      process.env.JWT_SECRET, // Secret key for JWT
-      { expiresIn: '1h' } // Token expiration time
+    const token = JWT.sign(
+      { id: user._id, email: user.email, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
     );
 
-    // Return success response with the token
     res.status(200).json({
       success: true,
       message: 'Login successful',
-      token,  // Send the JWT token to the frontend
-      user: { id: user._id, name: user.name, email: user.email, role: user.role },
+      token,
+      user: { 
+        id: user._id, 
+        name: user.name, 
+        email: user.email, 
+        role: user.role, 
+        isApproved: user.isApproved,
+        isProfileViewed: user.isProfileViewed // Include this
+      },
     });
   } catch (error) {
     console.error(error);
@@ -158,16 +174,16 @@ exports.login = async (req, res) => {
 const transporter = nodemailer.createTransport({
   service: 'Gmail', // e.g., 'Gmail', 'Yahoo', etc.
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: process.env.USER_EMAIL,
+    pass: process.env.USER_PASS,
   },
 });
 
 const sendPasswordResetEmail = async (email, accessToken) => {
-  const resetLink = `http://localhost:3000/reset-password?token=${accessToken}&email=${email}`;
+  const resetLink = `http://localhost:3000/forgot-password?token=${accessToken}&email=${email}`;
 
   const mailOptions = {
-    from: 'np03cs4a220014@heraldcollege.edu.np', // sender address
+    from: 'np03cs4a220023@heraldcollege.edu.np', // sender address
     to: email, // receiver address
     subject: 'Password Reset Request', // Subject line
     text: `You requested for a password reset. Click the link to reset your password: ${resetLink}`,
@@ -248,5 +264,49 @@ exports.resetPassword = async (req, res) => {
   } catch (error) {
     console.error("Error resetting password:", error);
     res.status(500).send({ message: "Something went wrong", error });
+  }
+};
+
+// User info route
+exports.userInfo = async (req, res) => {
+  try {
+    // Assuming req.user.id contains the user ID
+    const user = await userModel.findById(req.user.id); 
+
+    if (!user) {
+      // Return a 404 if the user is not found
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Return the user data as JSON if found
+    res.json(user);  
+  } catch (error) {
+    // Handle specific errors (e.g., database connection issues)
+    console.error(error);  // Log error details for debugging purposes
+    res.status(500).json({ 
+      message: 'Server error, unable to fetch user data', 
+      error: error.message || 'Internal Server Error'
+    });
+  }
+};
+exports.updateProfileViewed = async (req, res) => {
+  try {
+    const { isProfileViewed } = req.body;
+    const userId = req.user.id; // Assumes authMiddleware sets req.user from JWT
+
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      { isProfileViewed },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ success: true, message: "Profile viewed status updated", user });
+  } catch (error) {
+    console.error("Error updating profile viewed status:", error);
+    res.status(500).json({ success: false, message: "Server error", error });
   }
 };

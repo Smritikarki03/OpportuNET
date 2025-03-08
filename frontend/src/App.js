@@ -8,14 +8,25 @@ import AboutPage from "./pages/Aboutpage";
 import SignUpSelectionPage from './pages/SignupSelectionPage';
 import SignUpEmployer from './pages/auth/employerSignup';
 import ForgotPassword from './pages/auth/Forgotpw';
-import JobSeekerProfile from './pages/PJobSeeker';
+import ProfilePage from './pages/ProfilePage';
 import EmployerProfile from './pages/EmployerProfile';
 import EmployerProfilePage from './pages/ProfileEm';
 import RatingsAndReviews from './pages/Ratings';
-import EditJobSeekerProfile from './pages/EditJP';
+import EditProfilePage from './pages/EditProfilePage';
 import EditEmployerProfile from './pages/EditEP';
 import EditEMProfile from './pages/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
+import Dashboard from './pages/EmployerDB';
+import AdminDashboard from './pages/AdminDB';
+import AdminDbpage from './pages/AdminDbpage';
+import BrowseJobs from './pages/Browse';
+import HelpPage from './pages/help';
+import ContactPage from './pages/Contact';
+import CV from './pages/CV';
+// import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+// import BrowseJobsPage from './pages/BrowseJobsPage';
+// import PostJobPage from './pages/PostJobPage';
+
 
 const App = () => {
   return (
@@ -30,13 +41,32 @@ const App = () => {
           <Route path="/selectSignup" element={<SignUpSelectionPage />} />
           <Route path="/Forgotpw" element={<ForgotPassword/>} />
           <Route path="/EmployerProfile" element={<EmployerProfile/>} />
-          <Route path="/PJobSeeker" element={<JobSeekerProfile/>} />
+          <Route path="/profile" element={<ProfilePage/>} />
           <Route path="/ProfileEM" element={<EmployerProfilePage/>} />
           <Route path="/Ratings" element={<RatingsAndReviews/>} />
-          <Route path="/EditJP" element={<EditJobSeekerProfile/>} />
+          <Route path="/edit-profile" element={<EditProfilePage/>} />
           <Route path="/EditEP" element={<EditEmployerProfile/>} />
           <Route path="/EMEdit" element={<EditEMProfile/>} />
           <Route path="/reset-password" element={<ResetPassword/>} />
+          <Route path="/EmployerDB" element={<Dashboard/>} />
+          <Route path="/AdminDB" element={<AdminDashboard/>} />
+          <Route path="/AdminDbpage" element={<AdminDbpage/>} />
+          <Route path="/Browse" element={<BrowseJobs/>} />
+          <Route path="/help" element={<HelpPage/>} />
+          <Route path="/Contact" element={<ContactPage/>} />
+          <Route path="/CV" element={<CV/>} />
+          
+
+
+
+
+          {/* <Route path="/" element={<BrowseJobsPage />} />
+          <Route path="/post-job" element={<PostJobPage />} /> */}
+
+
+
+
+
 
 
 

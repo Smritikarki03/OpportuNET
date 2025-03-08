@@ -1,47 +1,63 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/auth";
+import axios from "axios";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false); // Add loading state
-  const [error, setError] = useState(null); // Handle error messages
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [auth, setAuth] = useAuth(); // Ensure that this hook is correctly implemented
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true); // Start loading when the form is submitted
+    setLoading(true);
+    setError(""); // Clear any existing error messages
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
+      // Send email and password instead of formData
+      const response = await axios.post("http://localhost:5000/api/auth/login", {
+        email,
+        password,
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        alert(`Login successful! Welcome, ${data.user.email}`);
-        
-        // Store both token and user in localStorage
-        localStorage.setItem("auth", JSON.stringify({
-          user: data.user,
-          token: data.token,
-        }));
+      console.log(response.data); // Log the response to check the data
 
-        // Redirect user
-        navigate("/");
-      } else {
-        const error = await response.json();
-        setError(error.message || "An error occurred. Please try again.");
+      const { user, token } = response.data;
+
+      if (token) {
+        // Extract the user's name (assuming 'name' is a field in the user object)
+        const userName = user.name || user.firstName || user.username || email.split("@")[0]; // Fallback to email username if no name
+        setAuth({ user, token }); // Set the auth context
+        localStorage.setItem("auth", token); // Store token in localStorage
+        localStorage.setItem("userName", userName); // Store user's name in localStorage
+        localStorage.setItem("userRole", user.role); // Store role for future use
+
+        if (user.role === "admin") {
+          navigate("/dashboard/admin");
+        } else if (user.role === "employer") {
+          if (!user.isApproved) {
+            setError("Your account is awaiting approval from the admin.");
+          } else {
+            navigate("/"); // Redirect to homepage if employer is approved
+          }
+        } else {
+          navigate("/"); // Default redirect for other roles (e.g., job seeker)
+        }
       }
     } catch (err) {
-      console.error("Error during login:", err);
-      setError("An error occurred. Please try again.");
+      console.error(err); // Log the full error object
+
+      // Handle specific errors
+      if (err.response?.status === 403) {
+        setError("Your account is awaiting approval from the admin.");
+      } else {
+        setError("Invalid email or password. Please try again.");
+      }
     } finally {
-      setLoading(false); // Stop loading once the process is complete
+      setLoading(false); // Stop loading
     }
   };
 
@@ -51,9 +67,7 @@ const Login = () => {
       <div className="w-1/2 bg-teal-700 flex items-center justify-center">
         <div className="text-white text-center px-6">
           <h1 className="text-4xl font-bold mb-4">Welcome Back!</h1>
-          <p className="text-lg">
-            We're glad to see you again. Please login to continue.
-          </p>
+          <p className="text-lg">We're glad to see you again. Please login to continue.</p>
         </div>
       </div>
 
@@ -64,7 +78,7 @@ const Login = () => {
           {error && (
             <div className="text-red-500 text-sm mb-4">{error}</div>
           )}
-          <form onSubmit={handleLogin} className="mt-4">
+          <form onSubmit={handleSubmit} className="mt-4">
             <div className="mb-4">
               <label
                 htmlFor="email"

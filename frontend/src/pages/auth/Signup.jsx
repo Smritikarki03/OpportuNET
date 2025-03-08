@@ -5,18 +5,28 @@ const Signup = () => {
     firstName: "",
     lastName: "",
     email: "",
-    phoneNumber: "",
+    phoneNumber: "", // Optional, kept for potential future use
     password: "",
+    confirmPassword: "", // Added to match backend requirement
   });
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(""); // State for error display
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setError(""); // Clear error when user types
+    console.log("Signup: Input changed", { name, value, formData: { ...formData, [name]: value } });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(""); // Clear previous error
+
+    // Combine firstName and lastName into name
+    const name = `${formData.firstName} ${formData.lastName}`.trim();
+    console.log("Signup: Submitting form data", { name, email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword });
 
     try {
       const response = await fetch("http://localhost:5000/api/auth/register", {
@@ -25,26 +35,26 @@ const Signup = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          fname: formData.firstName,
-          lname: formData.lastName,
+          name, // Combined name
           email: formData.email,
-          phone: formData.phoneNumber,
           password: formData.password,
-          role: "user", // Hardcoded or dynamic
+          confirmPassword: formData.confirmPassword,
+          // Removed phoneNumber and role as they are not expected by the backend for jobseeker
         }),
       });
 
       const result = await response.json();
+      console.log("Signup: Server response", { status: response.status, result });
 
       if (response.ok) {
         alert("Signup successful! Please login.");
-        // Redirect user to login page (if using React Router)
         window.location.href = "/login";
       } else {
-        alert(result.message || "An error occurred during signup.");
+        setError(result.message || "An error occurred during signup.");
       }
     } catch (error) {
-      alert("Network error. Please try again later.");
+      console.error("Signup: Network error", error);
+      setError("Network error. Please try again later.");
     } finally {
       setIsLoading(false);
     }
@@ -56,24 +66,18 @@ const Signup = () => {
       <div className="w-1/2 bg-teal-700 flex items-center justify-center">
         <div className="text-white text-center px-6">
           <h1 className="text-4xl font-bold mb-4">Join OpportuNET!</h1>
-          <p className="text-lg">
-            Sign up today to explore amazing opportunities.
-          </p>
+          <p className="text-lg">Sign up today to explore amazing opportunities.</p>
         </div>
       </div>
 
       {/* Right Section */}
       <div className="w-1/2 bg-white flex items-center justify-center">
         <div className="w-full max-w-sm bg-teal-50 p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-center text-teal-800">
-            Signup
-          </h2>
+          <h2 className="text-2xl font-bold text-center text-teal-800">Signup</h2>
+          {error && <p className="text-red-600 text-center mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div>
-              <label
-                htmlFor="firstName"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="firstName" className="block text-sm font-medium text-teal-700">
                 First Name
               </label>
               <input
@@ -87,10 +91,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label
-                htmlFor="lastName"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="lastName" className="block text-sm font-medium text-teal-700">
                 Last Name
               </label>
               <input
@@ -104,10 +105,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-teal-700">
                 Email Address
               </label>
               <input
@@ -121,10 +119,7 @@ const Signup = () => {
               />
             </div>
             <div>
-              <label
-                htmlFor="phoneNumber"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="phoneNumber" className="block text-sm font-medium text-teal-700">
                 Phone Number
               </label>
               <input
@@ -133,15 +128,12 @@ const Signup = () => {
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                required
+                // Not required since backend doesn't use it for jobseeker
                 className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
               />
             </div>
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-teal-700">
                 Password
               </label>
               <input
@@ -149,6 +141,20 @@ const Signup = () => {
                 id="password"
                 name="password"
                 value={formData.password}
+                onChange={handleChange}
+                required
+                className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-teal-700">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                name="confirmPassword"
+                value={formData.confirmPassword}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
@@ -166,10 +172,7 @@ const Signup = () => {
           </form>
           <p className="mt-4 text-sm text-teal-600 text-center">
             Already have an account?{" "}
-            <a
-              href="/login"
-              className="text-teal-500 hover:underline font-medium"
-            >
+            <a href="/login" className="text-teal-500 hover:underline font-medium">
               Login
             </a>
           </p>
