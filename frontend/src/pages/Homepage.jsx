@@ -68,6 +68,10 @@ const HomePage = () => {
     setNewJobs((prevJobs) => [newJob, ...prevJobs]); // Add new job to the top of the list
     setJobForm({ title: "", company: "", location: "", category: "" }); // Reset form
   };
+  const handleGenerateCV = () => {
+    navigate("/CV"); // Adjust this route based on your setup
+  };
+
 
   // Sample top companies data
   const topCompanies = [
@@ -189,6 +193,13 @@ const HomePage = () => {
                 </div>
               </div>
             ))}
+            {/* Floating "Generate a CV" Button */}
+             <button
+        onClick={handleGenerateCV}
+        className="fixed bottom-6 right-6 bg-teal-900 text-white px-6 py-3 rounded-full shadow-lg hover:bg-teal-600 transition transform hover:scale-110"
+      >
+        Generate a CV
+      </button>
           </div>
         </div>
       </div>
