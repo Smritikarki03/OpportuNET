@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {useAuth} from "../context/auth";
 
 const ProfilePage = () => {
   const [user, setUser] = useState(null);
+  const [auth]= useAuth();
   const [showPopup, setShowPopup] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -22,29 +24,37 @@ const ProfilePage = () => {
 
   const fetchUserData = async () => {
     try {
-      const token = localStorage.getItem("token");
+      const token = auth.token;
+      if (!token) {
+        setError("No authentication token found. Please log in.");
+        setIsLoading(false);
+        return;
+      }
+  
       const response = await fetch("http://localhost:5000/api/auth/userInfo", {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${auth.token}`,
         },
       });
+  
       const result = await response.json();
+      console.log("API Response:", result);
+  
       if (response.ok) {
         setUser(result);
-        const shouldShowPopup = result.role === "jobseeker" && !result.isProfileViewed;
-        setShowPopup(shouldShowPopup);
         localStorage.setItem("user", JSON.stringify(result));
       } else {
-        setError("Failed to load user data.");
+        setError(result.message || "Failed to load user data.");
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
-      setError("Network error. Please try again later.");
+      console.error("Network Error:", error);
+      setError("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
     }
   };
+  
 
   const handleViewProfile = () => {
     if (user && user.role === "jobseeker" && !user.isProfileViewed) {

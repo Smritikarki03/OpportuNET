@@ -1,104 +1,82 @@
-const nodemailer = require('nodemailer');
-const userModel = require('../models/User');
-const Notification = require('../models/Notification');
+const nodemailer = require("nodemailer");
+const userModel = require("../models/User");
+const Notification = require("../models/Notification");
 
 // Set up the email transporter
 const transporter = nodemailer.createTransport({
-  service: 'Gmail', // e.g., 'Gmail', 'Yahoo', etc.
+  service: "Gmail",
   auth: {
-    user: process.env.USER_EMAIL, // Your email address (from .env)
-    pass: process.env.USER_PASS,  // Your email password or app-specific password
+    user: process.env.USER_EMAIL,
+    pass: process.env.USER_PASS,
   },
 });
 
-// Function to send email about account approval or rejection
 const sendEmployerStatusEmail = async (email, status) => {
   const link = `http://localhost:3000/login`;
   let subject, text, html;
 
-  if (status === 'approved') {
-    subject = 'Your Employer Account has been Approved';
+  if (status === "approved") {
+    subject = "Your Employer Account has been Approved";
     text = `Congratulations, your account has been approved by the admin! You can now log in to your account using the following link: ${link}`;
     html = `<p>Congratulations, your account has been approved by the admin!</p>
             <p>You can now log in to your account using the following link: 
             <a href="${link}" style="background-color:#28a745;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Login</a></p>`;
-  } else if (status === 'rejected') {
-    subject = 'Your Employer Account has been Rejected';
-    text = 'Unfortunately, your account has been rejected by the admin.';
+  } else if (status === "rejected") {
+    subject = "Your Employer Account has been Rejected";
+    text = "Unfortunately, your account has been rejected by the admin.";
     html = `<p>Unfortunately, your account has been rejected by the admin.</p>`;
   }
 
   const mailOptions = {
-    from: process.env.USER_EMAIL, // Sender's email address
-    to: email, // Receiver's email (Employer)
-    subject: subject, // Email subject
-    text: text, // Plain text message
-    html: html, // HTML message
+    from: process.env.USER_EMAIL,
+    to: email,
+    subject: subject,
+    text: text,
+    html: html,
   };
 
   try {
     await transporter.sendMail(mailOptions);
   } catch (error) {
-    console.error('Error sending status email:', error);
-    throw new Error('Error sending email notification');
+    console.error("Error sending status email:", error);
+    throw new Error("Error sending email notification");
   }
 };
 
-// Admin Approve/Reject Employer
-exports.adminApproveRejectEmployer = async (req, res) => {
+const adminApproveRejectEmployer = async (req, res) => {
   try {
-    const { EmployerId, action } = req.body; // action could be "approve" or "reject"
+    const { employerId, action } = req.body;
 
-    // Check if the admin is authenticated (you can customize this with your actual admin check)
-    const admin = req.user; // Assuming admin is in req.user after authentication
-    if (admin.role !== 'admin') {
-      return res.status(403).json({ message: "You are not authorized to approve Employers." });
+    if (!employerId || !action) {
+      return res.status(400).json({ message: "Employer ID and action are required." });
     }
 
-    // Find the Employer
-    const Employer = await userModel.findById(EmployerId);
-    if (!Employer || Employer.role !== 'employer') {
+    const employer = await userModel.findById(employerId);
+    if (!employer || employer.role !== "employer") {
       return res.status(400).json({ message: "Employer not found or invalid role." });
     }
 
-    // Find the notification for this Employer registration
-    const notification = await Notification.findOne({ EmployerId: Employer._id, read: false });
-    
+    const notification = await Notification.findOne({ employerId: employer._id, read: false });
     if (!notification) {
       return res.status(404).json({ message: "Notification not found." });
     }
 
-    // Handle approval
-    if (action === 'approve') {
-      Employer.isApproved = true; // Set isApproved to true if approved
-      await Employer.save();
+    if (action === "approve") {
+      employer.isApproved = true;
+      await employer.save();
 
-      // Update the notification message
-      notification.message = `Employer ${Employer.name} has been approved.`;
-      notification.read = true; // Mark it as read after approval
+      notification.message = `Employer ${employer.name} has been approved.`;
+      notification.read = true;
       await notification.save();
 
-      // Send email to the Employer about approval
-      await sendEmployerStatusEmail(Employer.email, 'approved');
-
+      await sendEmployerStatusEmail(employer.email, "approved");
       return res.status(200).json({ message: "Employer has been approved successfully." });
-    } 
-    // Handle rejection
-    else if (action === 'reject') {
-      await Employer.deleteOne(); // Remove the Employer from the system if rejected
-
-      // Update the notification message
-      notification.message = `Employer ${Employer.name} has been rejected.`;
-      notification.read = true; // Mark it as read after rejection
-      await notification.save();
-
-      // Send email to the Employer about rejection
-      await sendEmployerStatusEmail(Employer.email, 'rejected');
-
+    } else if (action === "reject") {
+      await employer.deleteOne();
+      await Notification.deleteOne({ employerId: employer._id });
+      await sendEmployerStatusEmail(employer.email, "rejected");
       return res.status(200).json({ message: "Employer registration has been rejected." });
-    } 
-    // Invalid action
-    else {
+    } else {
       return res.status(400).json({ message: "Invalid action. Must be either 'approve' or 'reject'." });
     }
   } catch (error) {
@@ -107,31 +85,33 @@ exports.adminApproveRejectEmployer = async (req, res) => {
   }
 };
 
-// Controller to fetch all notifications for the admin
-// Controller to fetch all notifications for the admin with Employer details (name, phone, email, licenseNo)
-exports.getNotifications = async (req, res) => {
+
+const getNotifications = async (req, res) => {
   try {
-    // Fetch notifications for the logged-in admin and populate Employer details
-    const notifications = await Notification.find({ adminId: req.user._id })
-      .populate('employerId', 'name phone email companyName industry') // Populate EmployerId with specific fields
-      .exec(); // Ensure the query is executed
+    const notifications = await Notification.find({ adminId: req.user.id })
+      .populate("employerId", "name contactnumber email companyName industry")
+      .exec();
 
     res.status(200).json({ notifications });
+
   } catch (error) {
     console.error("Error fetching notifications:", error);
     res.status(500).json({ message: "Error fetching notifications" });
   }
 };
 
-// Controller to mark a notification as read
-exports.markNotificationAsRead = async (req, res) => {
+const markNotificationAsRead = async (req, res) => {
   try {
     const notification = await Notification.findById(req.params.id);
     if (!notification) {
       return res.status(404).json({ message: "Notification not found" });
     }
 
-    notification.read = true; // Set the read status to true
+    if (notification.adminId.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: "Unauthorized to mark this notification as read" });
+    }
+
+    notification.read = true;
     await notification.save();
 
     res.status(200).json({ message: "Notification marked as read" });
@@ -139,4 +119,11 @@ exports.markNotificationAsRead = async (req, res) => {
     console.error("Error updating notification:", error);
     res.status(500).json({ message: "Error updating notification" });
   }
+};
+
+// Explicitly export all functions
+module.exports = {
+  adminApproveRejectEmployer,
+  getNotifications,
+  markNotificationAsRead,
 };

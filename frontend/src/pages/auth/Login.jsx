@@ -8,56 +8,52 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [auth, setAuth] = useAuth(); // Ensure that this hook is correctly implemented
+  const [auth, setAuth] = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError(""); // Clear any existing error messages
+    setError(null);
 
     try {
-      // Send email and password instead of formData
+      console.log("Attempting login with:", { email, password }); // Debug: Log input
       const response = await axios.post("http://localhost:5000/api/auth/login", {
-        email,
-        password,
+        email: email.trim().toLowerCase(), // Normalize email
+        password: password.trim(), // Trim password
       });
 
-      console.log(response.data); // Log the response to check the data
-
+      console.log("Server response:", response.data); // Debug: Log response
       const { user, token } = response.data;
 
       if (token) {
-        // Extract the user's name (assuming 'name' is a field in the user object)
-        const userName = user.name || user.firstName || user.username || email.split("@")[0]; // Fallback to email username if no name
-        setAuth({ user, token }); // Set the auth context
-        localStorage.setItem("auth", token); // Store token in localStorage
-        localStorage.setItem("userName", userName); // Store user's name in localStorage
-        localStorage.setItem("userRole", user.role); // Store role for future use
+        const userName = user.name || user.firstName || user.username || email.split("@")[0];
+        setAuth({ user, token });
+        localStorage.setItem("auth", token);
+        localStorage.setItem("userName", userName);
+        localStorage.setItem("userRole", user.role);
 
         if (user.role === "admin") {
-          navigate("/dashboard/admin");
+          navigate("/AdminDB");
         } else if (user.role === "employer") {
           if (!user.isApproved) {
             setError("Your account is awaiting approval from the admin.");
           } else {
-            navigate("/"); // Redirect to homepage if employer is approved
+            navigate("/");
           }
         } else {
-          navigate("/"); // Default redirect for other roles (e.g., job seeker)
+          navigate("/");
         }
       }
     } catch (err) {
-      console.error(err); // Log the full error object
-
-      // Handle specific errors
+      console.error("Login error details:", err.response ? err.response.data : err.message); // Detailed error log
       if (err.response?.status === 403) {
         setError("Your account is awaiting approval from the admin.");
       } else {
         setError("Invalid email or password. Please try again.");
       }
     } finally {
-      setLoading(false); // Stop loading
+      setLoading(false);
     }
   };
 
@@ -75,15 +71,10 @@ const Login = () => {
       <div className="w-1/2 bg-white flex items-center justify-center">
         <div className="w-full max-w-sm bg-teal-50 p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-bold text-center text-teal-800">Login</h2>
-          {error && (
-            <div className="text-red-500 text-sm mb-4">{error}</div>
-          )}
+          {error && <div className="text-red-500 text-sm mb-4">{error}</div>}
           <form onSubmit={handleSubmit} className="mt-4">
             <div className="mb-4">
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="email" className="block text-sm font-medium text-teal-700">
                 Email Address
               </label>
               <input
@@ -97,10 +88,7 @@ const Login = () => {
               />
             </div>
             <div className="mb-4">
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-teal-700"
-              >
+              <label htmlFor="password" className="block text-sm font-medium text-teal-700">
                 Password
               </label>
               <input
@@ -115,7 +103,9 @@ const Login = () => {
             </div>
             <button
               type="submit"
-              className={`w-full bg-teal-700 text-white py-2 px-4 rounded-lg hover:bg-teal-600 transition ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+              className={`w-full bg-teal-700 text-white py-2 px-4 rounded-lg hover:bg-teal-600 transition ${
+                loading ? "opacity-50 cursor-not-allowed" : ""
+              }`}
               disabled={loading}
             >
               {loading ? "Logging in..." : "Login"}
@@ -131,10 +121,7 @@ const Login = () => {
           </p>
           <p className="mt-2 text-sm text-teal-600 text-center">
             Don't have an account?{" "}
-            <a
-              href="/selectSignup"
-              className="text-teal-500 hover:underline font-medium"
-            >
+            <a href="/selectSignup" className="text-teal-500 hover:underline font-medium">
               Sign up
             </a>
           </p>

@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 const AdminDashboard = () => {
   const [jobs, setJobs] = useState([
     { id: 1, company: "Leapforg", title: "Frontend Developer" },
     { id: 2, company: "Cotiviti", title: "Backend Engineer" },
   ]);
+
+  const navigate = useNavigate(); // Hook for navigation
 
   const approveJob = (id) => setJobs(jobs.filter(job => job.id !== id));
   const rejectJob = (id) => setJobs(jobs.filter(job => job.id !== id));
@@ -37,8 +39,20 @@ const AdminDashboard = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-6">
-          <div className="mb-6">
+          {/* Top Bar with Notification */}
+          <div className="flex justify-between items-center mb-6">
             <h1 className="text-3xl font-semibold text-teal-700">🚀 Admin Dashboard</h1>
+
+            {/* Notification Icon (Clickable) */}
+            <div 
+              className="relative cursor-pointer"
+              onClick={() => navigate("/AdminNotifications")} // Navigate to notifications page
+            >
+              <span className="text-2xl">🔔</span>
+              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                3
+              </span>
+            </div>
           </div>
 
           {/* Job Approvals Section */}

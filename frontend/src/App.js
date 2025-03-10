@@ -23,6 +23,7 @@ import BrowseJobs from './pages/Browse';
 import HelpPage from './pages/help';
 import ContactPage from './pages/Contact';
 import CV from './pages/CV';
+import AdminNotifications from './Components/AdminNotifications';
 // import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 // import BrowseJobsPage from './pages/BrowseJobsPage';
 // import PostJobPage from './pages/PostJobPage';
@@ -39,7 +40,7 @@ const App = () => {
           <Route path="/employerSignup" element={<SignUpEmployer/>} />
           <Route path="/About" element={<AboutPage />} />
           <Route path="/selectSignup" element={<SignUpSelectionPage />} />
-          <Route path="/Forgotpw" element={<ForgotPassword/>} />
+          <Route path="/Forgot-password" element={<ForgotPassword/>} />
           <Route path="/EmployerProfile" element={<EmployerProfile/>} />
           <Route path="/profile" element={<ProfilePage/>} />
           <Route path="/ProfileEM" element={<EmployerProfilePage/>} />
@@ -55,6 +56,8 @@ const App = () => {
           <Route path="/help" element={<HelpPage/>} />
           <Route path="/Contact" element={<ContactPage/>} />
           <Route path="/CV" element={<CV/>} />
+          <Route path="/AdminNotifications" element={<AdminNotifications/>} />
+
           
 
 

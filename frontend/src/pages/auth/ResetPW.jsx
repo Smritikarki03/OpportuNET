@@ -7,15 +7,10 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const [passwordSuccess, setPasswordSuccess] = useState("");
-  const navigate = useNavigate(); // Initialize useNavigate
+  const navigate = useNavigate();
 
-  const handleNewPasswordChange = (e) => {
-    setNewPassword(e.target.value);
-  };
-
-  const handleConfirmPasswordChange = (e) => {
-    setConfirmPassword(e.target.value);
-  };
+  const handleNewPasswordChange = (e) => setNewPassword(e.target.value);
+  const handleConfirmPasswordChange = (e) => setConfirmPassword(e.target.value);
 
   const handleSubmitNewPassword = async (e) => {
     e.preventDefault();
@@ -26,7 +21,6 @@ const ResetPassword = () => {
       setPasswordError("Passwords do not match.");
       return;
     }
-
     if (newPassword.length < 6) {
       setPasswordError("Password must be at least 6 characters long.");
       return;
@@ -37,6 +31,11 @@ const ResetPassword = () => {
       const token = searchParams.get("token");
       const email = searchParams.get("email");
 
+      if (!token || !email) {
+        setPasswordError("Invalid or missing token/email in URL.");
+        return;
+      }
+
       await axios.post("http://localhost:5000/api/auth/reset-password", {
         token,
         email,
@@ -44,9 +43,7 @@ const ResetPassword = () => {
       });
 
       setPasswordSuccess("Your password has been successfully updated.");
-
-      // Redirect to login page after a short delay
-      setTimeout(() => navigate("/login"), 2000); // 2-second delay
+      setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
       setPasswordError(
         err.response?.data?.message || "Error updating password. Please try again."
@@ -75,11 +72,8 @@ const ResetPassword = () => {
         )}
 
         <form onSubmit={handleSubmitNewPassword} className="mt-6">
-          {/* New Password Field */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              New Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700">New Password</label>
             <input
               type="password"
               placeholder="Enter new password"
@@ -90,11 +84,8 @@ const ResetPassword = () => {
             />
           </div>
 
-          {/* Confirm Password Field */}
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700">
-              Confirm Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700">Confirm Password</label>
             <input
               type="password"
               placeholder="Confirm new password"

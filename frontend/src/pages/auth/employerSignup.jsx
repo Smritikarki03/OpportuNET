@@ -2,14 +2,14 @@ import React, { useState } from "react";
 
 const SignUpEmployer = () => {
   const [formData, setFormData] = useState({
-    name: "",
-    companyName: "",
+    fullname: "",           // Matches backend
     email: "",
-    contact: "",
+    contactnumber: "",      // Matches backend
     password: "",
-    confirmPassword: "",
+    confirmpassword: "",    // Matches backend
+    companyname: "",        // Matches backend
     industry: "",
-    location: "",
+    companylocation: "",    // Matches backend
   });
 
   const [error, setError] = useState("");
@@ -29,7 +29,7 @@ const SignUpEmployer = () => {
     e.preventDefault();
 
     // Validate password confirmation
-    if (formData.password !== formData.confirmPassword) {
+    if (formData.password !== formData.confirmpassword) { // Updated to match formData key
       setError("Passwords do not match.");
       setSuccess("");
       return;
@@ -42,14 +42,14 @@ const SignUpEmployer = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          name: formData.name,
-          companyName: formData.companyName,
+          fullname: formData.fullname,
           email: formData.email,
-          phone: formData.contact,
+          contactnumber: formData.contactnumber,
           password: formData.password,
-          confirmPassword: formData.confirmPassword,
+          confirmpassword: formData.confirmpassword,
+          companyname: formData.companyname,
           industry: formData.industry,
-          companyLocation: formData.location,
+          companylocation: formData.companylocation,
           role: "employer", // Explicitly set the role
         }),
       });
@@ -60,14 +60,14 @@ const SignUpEmployer = () => {
         setSuccess("Employer registered successfully.");
         setError("");
         setFormData({
-          name: "",
-          companyName: "",
+          fullname: "",
           email: "",
-          contact: "",
+          contactnumber: "",
           password: "",
-          confirmPassword: "",
+          confirmpassword: "",
+          companyname: "",
           industry: "",
-          location: "",
+          companylocation: "",
         });
       } else {
         setError(data.message || "An error occurred.");
@@ -103,12 +103,12 @@ const SignUpEmployer = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Full Name Field */}
             <div>
-              <label htmlFor="name" className="block text-teal-700 font-semibold">Full Name</label>
+              <label htmlFor="fullname" className="block text-teal-700 font-semibold">Full Name</label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={formData.name}
+                id="fullname"
+                name="fullname"
+                value={formData.fullname}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -133,12 +133,12 @@ const SignUpEmployer = () => {
 
             {/* Contact Number Field */}
             <div>
-              <label htmlFor="contact" className="block text-teal-700 font-semibold">Contact Number</label>
+              <label htmlFor="contactnumber" className="block text-teal-700 font-semibold">Contact Number</label>
               <input
                 type="text"
-                id="contact"
-                name="contact"
-                value={formData.contact}
+                id="contactnumber"
+                name="contactnumber"
+                value={formData.contactnumber}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -163,26 +163,27 @@ const SignUpEmployer = () => {
 
             {/* Confirm Password Field */}
             <div>
-              <label htmlFor="confirmPassword" className="block text-teal-700 font-semibold">Confirm Password</label>
+              <label htmlFor="confirmpassword" className="block text-teal-700 font-semibold">Confirm Password</label>
               <input
                 type="password"
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
+                id="confirmpassword"
+                name="confirmpassword"
+                value={formData.confirmpassword}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
                 placeholder="Confirm your password"
               />
             </div>
+
             {/* Company Name Field */}
             <div>
-              <label htmlFor="companyName" className="block text-teal-700 font-semibold">Company Name</label>
+              <label htmlFor="companyname" className="block text-teal-700 font-semibold">Company Name</label>
               <input
                 type="text"
-                id="companyName"
-                name="companyName"
-                value={formData.companyName}
+                id="companyname"
+                name="companyname"
+                value={formData.companyname}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
@@ -207,12 +208,12 @@ const SignUpEmployer = () => {
 
             {/* Location Field */}
             <div>
-              <label htmlFor="location" className="block text-teal-700 font-semibold">Company Location</label>
+              <label htmlFor="companylocation" className="block text-teal-700 font-semibold">Company Location</label>
               <input
                 type="text"
-                id="location"
-                name="location"
-                value={formData.location}
+                id="companylocation"
+                name="companylocation"
+                value={formData.companylocation}
                 onChange={handleChange}
                 required
                 className="w-full px-4 py-2 border border-teal-300 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
