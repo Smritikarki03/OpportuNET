@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/auth";
+import Header from "../Components/Header";
+import ForgotPassword from "./auth/Forgotpw";
 
 
 const ProfilePage = () => {
@@ -77,7 +79,7 @@ const ProfilePage = () => {
             </div>
           </div>
           <button
-            onClick={() => navigate("/edit-profile", { state: { user } })}
+            onClick={() => navigate("/EditProfilePage", { state: { user } })}
             className="text-gray-500 hover:text-gray-700"
             title="Edit Profile"
           >
@@ -170,7 +172,7 @@ const ProfilePage = () => {
             <button
               onClick={() => {
                 setShowPopup(false);
-                navigate("/edit-profile", { state: { user } });
+                navigate("/EditProfilePage", { state: { user } });
               }}
               className="bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition"
             >

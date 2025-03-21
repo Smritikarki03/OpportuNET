@@ -24,6 +24,7 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   isProfileViewed: { type: Boolean, default: false }, // Add this field
+  isCompanySetup: { type: Boolean, default: false }, // New field to track company setup for employers
 });
 
 userSchema.methods.generateAuthToken = function () {
@@ -32,4 +33,6 @@ userSchema.methods.generateAuthToken = function () {
   });
 };
 
-module.exports = mongoose.model('User', userSchema);
+const User = mongoose.model('User', userSchema);
+
+module.exports = User;

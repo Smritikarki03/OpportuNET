@@ -12,11 +12,11 @@ import ProfilePage from './pages/ProfilePage';
 import EmployerProfile from './pages/EmployerProfile';
 import EmployerProfilePage from './pages/ProfileEm';
 import RatingsAndReviews from './pages/Ratings';
-import EditProfilePage from './pages/EditProfilePage';
+import EditProfile from './pages/EditProfilePage';
 import EditEmployerProfile from './pages/EditEP';
 import EditEMProfile from './pages/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
-import Dashboard from './pages/EmployerDB';
+import EmployerDashboard from './pages/EmployerDB';
 import AdminDashboard from './pages/AdminDB';
 import AdminDbpage from './pages/AdminDbpage';
 import BrowseJobs from './pages/Browse';
@@ -40,16 +40,16 @@ const App = () => {
           <Route path="/employerSignup" element={<SignUpEmployer/>} />
           <Route path="/About" element={<AboutPage />} />
           <Route path="/selectSignup" element={<SignUpSelectionPage />} />
-          <Route path="/Forgot-password" element={<ForgotPassword/>} />
+          <Route path="/Forgotpw" element={<ForgotPassword/>} />
           <Route path="/EmployerProfile" element={<EmployerProfile/>} />
           <Route path="/profile" element={<ProfilePage/>} />
           <Route path="/ProfileEM" element={<EmployerProfilePage/>} />
           <Route path="/Ratings" element={<RatingsAndReviews/>} />
-          <Route path="/edit-profile" element={<EditProfilePage/>} />
+          <Route path="/EditProfilePage" element={<EditProfile/>} />
           <Route path="/EditEP" element={<EditEmployerProfile/>} />
           <Route path="/EMEdit" element={<EditEMProfile/>} />
           <Route path="/reset-password" element={<ResetPassword/>} />
-          <Route path="/EmployerDB" element={<Dashboard/>} />
+          <Route path="/EmployerDB" element={<EmployerDashboard/>} />
           <Route path="/AdminDB" element={<AdminDashboard/>} />
           <Route path="/AdminDbpage" element={<AdminDbpage/>} />
           <Route path="/Browse" element={<BrowseJobs/>} />

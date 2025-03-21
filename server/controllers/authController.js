@@ -1,7 +1,6 @@
 const bcrypt = require("bcryptjs");
-const userModel = require("../models/User");
+const User = require('../models/User');
 const JWT = require("jsonwebtoken");
-const authenticate = require("../middleware/authMiddleware");
 const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 require("dotenv").config();
@@ -24,14 +23,14 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "Password should be at least 6 characters long" });
     }
 
-    const existingUser = await userModel.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists, please login instead" });
     }
 
     const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
-    const user = new userModel({
+    const user = new User({
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
@@ -91,14 +90,14 @@ exports.employerRegister = async (req, res) => {
       return res.status(400).json({ message: "Invalid role for this route" });
     }
 
-    const existingUser = await userModel.findOne({ email: email.toLowerCase() });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
       return res.status(400).json({ message: "User already exists, please login instead" });
     }
 
     const hashedPassword = await bcrypt.hash(password.trim(), 10);
 
-    const user = new userModel({
+    const user = new User({
       name: fullname,
       email: email.toLowerCase(),
       contactnumber,
@@ -109,10 +108,11 @@ exports.employerRegister = async (req, res) => {
       role,
       isApproved: false,
       isProfileViewed: false,
+      isCompanySetup: false, // Initialize as false for new employers
     });
     await user.save();
 
-    const admin = await userModel.findOne({ role: "admin" });
+    const admin = await User.findOne({ role: "admin" });
     if (!admin) {
       return res.status(500).json({ message: "Admin not found. Unable to send notification." });
     }
@@ -144,7 +144,7 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: "Email and password are required" });
     }
 
-    const user = await userModel.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() });
     console.log("User found in DB:", user ? user.email : "No user"); // Debug: Log user or null
 
     if (!user) {
@@ -180,7 +180,8 @@ exports.login = async (req, res) => {
         email: user.email,
         role: user.role,
         isApproved: user.isApproved,
-        isProfileViewed: user.isApproved,
+        isProfileViewed: user.isProfileViewed,
+        isCompanySetup: user.isCompanySetup, // Include this in the response
       },
     });
   } catch (error) {
@@ -188,6 +189,8 @@ exports.login = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error", error });
   }
 };
+
+// ... (rest of the controller remains unchanged: forgotPassword, resetPassword, userInfo, updateProfileViewed)
 
 const transporter = nodemailer.createTransport({
   service: "Gmail",
@@ -219,7 +222,7 @@ exports.forgotPassword = async (req, res) => {
       return res.status(400).send({ message: "Email is required" });
     }
 
-    const user = await userModel.findOne({ email: email.toLowerCase() });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
       return res.status(404).send({ message: "User not found" });
     }
@@ -252,7 +255,7 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).send({ message: "All fields are required" });
     }
 
-    const user = await userModel.findOne({
+    const user = await User.findOne({
       email: email.toLowerCase(),
       resetPasswordToken: token,
       resetPasswordExpires: { $gt: Date.now() },
@@ -278,7 +281,7 @@ exports.resetPassword = async (req, res) => {
 
 exports.userInfo = async (req, res) => {
   try {
-    const user = await userModel.findById(req.user.id);
+    const user = await User.findById(req.user.id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -299,7 +302,7 @@ exports.updateProfileViewed = async (req, res) => {
     const { isProfileViewed } = req.body;
     const userId = req.user.id;
 
-    const user = await userModel.findByIdAndUpdate(
+    const user = await User.findByIdAndUpdate(
       userId,
       { isProfileViewed },
       { new: true, runValidators: true }

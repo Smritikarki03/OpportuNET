@@ -41,54 +41,75 @@ const AdminNotifications = () => {
     fetchNotifications();
   }, [auth]);
 
-// Handle employer approval
-const handleApprove = async (employerId) => {
-  try {
-    const token = auth?.token;
-    if (!token) {
-      setError("Unauthorized action. Please log in.");
-      return;
+  // Handle employer approval
+  const handleApprove = async (employerId) => {
+    try {
+      const token = auth?.token;
+      if (!token) {
+        setError("Unauthorized action. Please log in.");
+        return;
+      }
+  
+      console.log("Employer ID:", employerId); // Debugging employerId
+  
+      const response = await axios.post(
+        `http://localhost:5000/api/admin/approve-reject`,
+        { employerId, action: 'approve' }, // Ensuring proper payload structure
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json', // Explicitly setting Content-Type
+          },
+        }
+      );
+  
+      // Check response from the server if needed
+      console.log("Approval Response:", response.data);
+  
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter((n) => n.employerId !== employerId)
+      );
+      setSuccess("Employer approved successfully.");
+      setError("");
+    } catch (err) {
+      setError("Failed to approve employer.");
+      console.error(err.response?.data || err); // Log the full error response
     }
+  };
+  
 
-    await axios.post(
-      `http://localhost:5000/api/admin/approve-reject`,
-      { employerId, action: 'approve' },  // Sending both employerId and action
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+  // Handle employer rejection
+  const handleReject = async (employerId) => {
+    try {
+      const token = auth?.token;
+      if (!token) {
+        setError("Unauthorized action. Please log in.");
+        return;
+      }
 
-    setNotifications(notifications.filter((n) => n.employerId !== employerId));
-    setSuccess("Employer approved successfully.");
-    setError("");
-  } catch (err) {
-    setError("Failed to approve employer.");
-    console.error(err);
-  }
-};
+      await axios.post(
+        `http://localhost:5000/api/admin/approve-reject`,
+        { employerId, action: 'reject' },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
 
-// Handle employer rejection
-const handleReject = async (employerId) => {
-  try {
-    const token = auth?.token;
-    if (!token) {
-      setError("Unauthorized action. Please log in.");
-      return;
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter((n) => n.employerId !== employerId)
+      );
+      setSuccess("Employer rejected successfully.");
+      setError("");
+    } catch (err) {
+      setError("Failed to reject employer.");
+      console.error(err);
     }
+  };
 
-    await axios.post(
-      `http://localhost:5000/api/admin/approve-reject`,
-      { employerId, action: 'reject' },  // Sending both employerId and action
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    setNotifications(notifications.filter((n) => n.employerId !== employerId));
-    setSuccess("Employer rejected successfully.");
-    setError("");
-  } catch (err) {
-    setError("Failed to reject employer.");
-    console.error(err);
-  }
-};
-
+  // Clear success message after a few seconds
+  useEffect(() => {
+    if (success) {
+      setTimeout(() => setSuccess(""), 3000);
+    }
+  }, [success]);
 
   return (
     <div className="container mx-auto p-6">

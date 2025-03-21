@@ -1,5 +1,5 @@
 const nodemailer = require("nodemailer");
-const userModel = require("../models/User");
+const User = require("../models/User");
 const Notification = require("../models/Notification");
 
 // Set up the email transporter
@@ -51,7 +51,7 @@ const adminApproveRejectEmployer = async (req, res) => {
       return res.status(400).json({ message: "Employer ID and action are required." });
     }
 
-    const employer = await userModel.findById(employerId);
+    const employer = await User.findById(employerId);
     if (!employer || employer.role !== "employer") {
       return res.status(400).json({ message: "Employer not found or invalid role." });
     }

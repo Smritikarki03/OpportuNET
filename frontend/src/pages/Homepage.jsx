@@ -2,22 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import CompanySetupModal from "../Components/CompanySetupModal";
 
 const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [newJobs, setNewJobs] = useState([]);
-  const [jobForm, setJobForm] = useState({
-    title: "",
-    company: "",
-    location: "",
-    category: "",
-  });
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
+  const [showCompanySetupModal, setShowCompanySetupModal] = useState(false);
+  const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Initial job listings
+    // Initial job listings (replace with API call to backend in production)
     setNewJobs([
       { title: "Software Engineer", company: "TechCorp", location: "Bouddha", category: "Engineering" },
       { title: "Product Manager", company: "InnovateInc", location: "Baluwatar", category: "Management" },
@@ -28,12 +25,24 @@ const HomePage = () => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
       const storedUserRole = localStorage.getItem("userRole");
+      const storedUserId = localStorage.getItem("userId");
+      const storedIsCompanySetup = localStorage.getItem("isCompanySetup");
+
       if (storedAuth) {
         setIsLoggedIn(true);
         setUserRole(storedUserRole || "");
+        setUserId(storedUserId || null);
+
+        // If the user is an employer, check if they’ve set up their company
+        if (storedUserRole === "employer" && storedUserId) {
+          if (storedIsCompanySetup === "false") {
+            setShowCompanySetupModal(true); // Show the modal if company setup is not complete
+          }
+        }
       } else {
         setIsLoggedIn(false);
         setUserRole("");
+        setUserId(null);
       }
     };
 
@@ -55,23 +64,13 @@ const HomePage = () => {
     console.log("Searching for:", searchQuery);
   };
 
-  // Handle job form input changes
-  const handleJobFormChange = (e) => {
-    const { name, value } = e.target;
-    setJobForm((prev) => ({ ...prev, [name]: value }));
-  };
-
-  // Handle job posting submission
-  const handleJobSubmit = (e) => {
-    e.preventDefault();
-    const newJob = { ...jobForm };
-    setNewJobs((prevJobs) => [newJob, ...prevJobs]); // Add new job to the top of the list
-    setJobForm({ title: "", company: "", location: "", category: "" }); // Reset form
-  };
   const handleGenerateCV = () => {
-    navigate("/CV"); // Adjust this route based on your setup
+    navigate("/CV");
   };
 
+  const handlePostJobClick = () => {
+    navigate("/post-job");
+  };
 
   // Sample top companies data
   const topCompanies = [
@@ -107,54 +106,15 @@ const HomePage = () => {
           </button>
         </div>
 
-        {/* Job Posting Form (Visible only to logged-in employers) */}
+        {/* Post a Job Button (Visible only to logged-in employers) */}
         {isLoggedIn && userRole === "employer" && (
           <div className="mt-12">
-            <h2 className="text-3xl font-semibold text-teal-800">Post a New Job</h2>
-            <form onSubmit={handleJobSubmit} className="mt-6 max-w-lg mx-auto space-y-4">
-              <input
-                type="text"
-                name="title"
-                value={jobForm.title}
-                onChange={handleJobFormChange}
-                placeholder="Job Title"
-                className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                required
-              />
-              <input
-                type="text"
-                name="company"
-                value={jobForm.company}
-                onChange={handleJobFormChange}
-                placeholder="Company Name"
-                className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                required
-              />
-              <input
-                type="text"
-                name="location"
-                value={jobForm.location}
-                onChange={handleJobFormChange}
-                placeholder="Location"
-                className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                required
-              />
-              <input
-                type="text"
-                name="category"
-                value={jobForm.category}
-                onChange={handleJobFormChange}
-                placeholder="Category (e.g., Engineering)"
-                className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
-                required
-              />
-              <button
-                type="submit"
-                className="w-full bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
-              >
-                Post Job
-              </button>
-            </form>
+            <button
+              onClick={handlePostJobClick}
+              className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
+            >
+              Post a Job
+            </button>
           </div>
         )}
 
@@ -194,15 +154,27 @@ const HomePage = () => {
               </div>
             ))}
             {/* Floating "Generate a CV" Button */}
-             <button
-        onClick={handleGenerateCV}
-        className="fixed bottom-6 right-6 bg-teal-900 text-white px-6 py-3 rounded-full shadow-lg hover:bg-teal-600 transition transform hover:scale-110"
-      >
-        Generate a CV
-      </button>
+            <button
+              onClick={handleGenerateCV}
+              className="fixed bottom-6 right-6 bg-teal-900 text-white px-6 py-3 rounded-full shadow-lg hover:bg-teal-600 transition transform hover:scale-110"
+            >
+              Generate a CV
+            </button>
           </div>
         </div>
       </div>
+
+      {/* Company Setup Modal (Visible only for first-time employer login) */}
+      {showCompanySetupModal && (
+        <CompanySetupModal
+          userId={userId}
+          onClose={() => {
+            setShowCompanySetupModal(false);
+            localStorage.setItem("isCompanySetup", "true"); // Update localStorage after setup
+          }}
+        />
+      )}
+
       <Footer />
     </div>
   );
