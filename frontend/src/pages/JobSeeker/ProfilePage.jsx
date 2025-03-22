@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useAuth } from "../context/auth";
-import Header from "../Components/Header";
-import ForgotPassword from "./auth/Forgotpw";
+import { useAuth } from "../../context/auth";
+import Header from "../../Components/Header";
+import ForgotPassword from "../auth/Forgotpw";
 
 
 const ProfilePage = () => {

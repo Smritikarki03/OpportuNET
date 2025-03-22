@@ -5,20 +5,20 @@ import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import HomePage from './pages/Homepage';
 import AboutPage from "./pages/Aboutpage";
-import SignUpSelectionPage from './pages/SignupSelectionPage';
+import SignUpSelectionPage from './pages/auth/SignupSelectionPage';
 import SignUpEmployer from './pages/auth/employerSignup';
 import ForgotPassword from './pages/auth/Forgotpw';
-import ProfilePage from './pages/ProfilePage';
-import EmployerProfile from './pages/EmployerProfile';
-import EmployerProfilePage from './pages/ProfileEm';
+import ProfilePage from './pages/JobSeeker/ProfilePage';
+import EmployerProfile from './pages/Employer/EmployerProfile';
+import EmployerProfilePage from './pages/Employer/ProfileEm';
 import RatingsAndReviews from './pages/Ratings';
-import EditProfile from './pages/EditProfilePage';
-import EditEmployerProfile from './pages/EditEP';
-import EditEMProfile from './pages/EMEdit';
+import EditProfile from './pages/JobSeeker/EditProfilePage';
+import EditEmployerProfile from './pages/Employer/EditEP';
+import EditEMProfile from './pages/Employer/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
-import EmployerDashboard from './pages/EmployerDB';
-import AdminDashboard from './pages/AdminDB';
-import AdminDbpage from './pages/AdminDbpage';
+import EmployerDashboard from './pages/Employer/EmployerDB';
+import AdminDashboard from './pages/Admin/AdminDB';
+import AdminDbpage from './pages/Admin/AdminDbpage';
 import BrowseJobs from './pages/Browse';
 import HelpPage from './pages/help';
 import ContactPage from './pages/Contact';
@@ -26,9 +26,7 @@ import CV from './pages/CV';
 import AdminNotifications from './Components/AdminNotifications';
 // import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 // import BrowseJobsPage from './pages/BrowseJobsPage';
-// import PostJobPage from './pages/PostJobPage';
-
-
+import JobPosting from './Components/JobPost';
 const App = () => {
   return (
       <div className="App">
@@ -57,14 +55,13 @@ const App = () => {
           <Route path="/Contact" element={<ContactPage/>} />
           <Route path="/CV" element={<CV/>} />
           <Route path="/AdminNotifications" element={<AdminNotifications/>} />
+          <Route path="/JobPost" element={<JobPosting/>} />
 
           
 
 
 
 
-          {/* <Route path="/" element={<BrowseJobsPage />} />
-          <Route path="/post-job" element={<PostJobPage />} /> */}
 
 
 

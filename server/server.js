@@ -5,6 +5,7 @@ const connectDB = require('./config/database');
 require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminroute');
+const jobRoutes = require('./routes/jobRoutes'); // New job routes
 
 const app = express();
 
@@ -14,12 +15,17 @@ connectDB();
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 // Use the authentication routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/jobs', jobRoutes); // Add job routes
 
-
+// Test route to confirm backend is running
+app.get('/', (req, res) => {
+    res.send('Backend is running!');
+  });
 
 
 const PORT = process.env.PORT || 5000;

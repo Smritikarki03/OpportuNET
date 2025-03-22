@@ -69,7 +69,7 @@ const HomePage = () => {
   };
 
   const handlePostJobClick = () => {
-    navigate("/post-job");
+    navigate("/JobPost");
   };
 
   // Sample top companies data

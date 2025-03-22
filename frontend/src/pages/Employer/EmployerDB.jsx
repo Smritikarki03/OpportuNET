@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
-import CompanySetupModal from "../Components/CompanySetupModal";
+import CompanySetupModal from "../../Components/CompanySetupModal";
 
 const EmployerDashboard = ({ employerId }) => {
   const [isCompanySetup, setIsCompanySetup] = useState(false);
