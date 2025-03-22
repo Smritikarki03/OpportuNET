@@ -5,8 +5,7 @@ const connectDB = require('./config/database');
 require('dotenv').config();
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminroute');
-const jobRoutes = require('./routes/jobRoutes'); // New job routes
-
+const jobRoutes = require("./routes/jobs");
 const app = express();
 
 // Connect to MongoDB
