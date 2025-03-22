@@ -1,47 +1,16 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import axios from 'axios';
 
 const BrowseJobs = () => {
-  const jobs = [
-    {
-      id: 1,
-      title: "Front-end Developer",
-      company: "Tech Corp",
-      location: "Remote",
-      type: "Full-time",
-      salary: "Rs.70,000 - Rs.90,000",
-    },
-    {
-      id: 2,
-      title: "Back-end Developer",
-      company: "Code Masters",
-      location: "New York, NY",
-      type: "Full-time",
-      salary: "Rs.80,000 - Rs.100,000",
-    },
-    {
-      id: 3,
-      title: "UI/UX Designer",
-      company: "Design Co",
-      location: "San Francisco, CA",
-      type: "Part-time",
-      salary: "Rs.50,000 - Rs.70,000",
-    },
-    {
-      id: 4,
-      title: "Project Manager",
-      company: "Build It Inc",
-      location: "Chicago, IL",
-      type: "Contract",
-      salary: "Rs.90,000 - Rs.110,000",
-    },
-  ];
-
+  const [jobs, setJobs] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [jobType, setJobType] = useState("all");
   const [locationFilter, setLocationFilter] = useState("all");
   const [salaryRange, setSalaryRange] = useState("all");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const locationOptions = [
     "All Locations",
@@ -54,13 +23,38 @@ const BrowseJobs = () => {
     "Lalitpur",
   ];
 
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const config = token
+          ? { headers: { Authorization: `Bearer ${token}` } }
+          : {};
+        const response = await axios.get('http://localhost:5000/api/jobs', config);
+        console.log('Fetched jobs:', response.data);
+        setJobs(response.data);
+        setLoading(false);
+      } catch (err) {
+        setError('Failed to fetch jobs');
+        setLoading(false);
+        console.error('Error fetching jobs:', err);
+      }
+    };
+
+    fetchJobs();
+  }, []);
+
   const filteredJobs = jobs.filter((job) => {
+    // Convert salary to a number for comparison
+    const salaryValue = parseInt(job.salary, 10);
+    const salaryFilterValue = salaryRange === "all" ? 0 : parseInt(salaryRange.replace("Rs.", "").replace(",", ""), 10);
+
     return (
       (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.company.toLowerCase().includes(searchTerm.toLowerCase())) &&
-      (jobType === "all" || job.type === jobType) &&
+      (jobType === "all" || job.jobType === jobType) &&
       (locationFilter === "all" || job.location === locationFilter) &&
-      (salaryRange === "all" || job.salary.includes(salaryRange))
+      (salaryRange === "all" || salaryValue >= salaryFilterValue)
     );
   });
 
@@ -68,9 +62,9 @@ const BrowseJobs = () => {
     <div className="min-h-screen bg-gray-100">
       {/* Header */}
       <Header />
-      <br></br>
-      <br></br>
-      <br></br>
+      <br />
+      <br />
+      <br />
       {/* Main Content */}
       <div className="container mx-auto p-6">
         <header className="mb-8 text-center">
@@ -92,8 +86,8 @@ const BrowseJobs = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Job Types</option>
-                <option value="Full-time">Full-time</option>
-                <option value="Part-time">Part-time</option>
+                <option value="Full Time">Full Time</option>
+                <option value="Part Time">Part Time</option>
                 <option value="Contract">Contract</option>
               </select>
             </div>
@@ -124,7 +118,7 @@ const BrowseJobs = () => {
               >
                 <option value="all">All Salaries</option>
                 <option value="Rs.50,000">Rs.50,000+</option>
-                <option value="Rs.70,000">RS.70,000+</option>
+                <option value="Rs.70,000">Rs.70,000+</option>
                 <option value="Rs.90,000">Rs.90,000+</option>
               </select>
             </div>
@@ -144,23 +138,30 @@ const BrowseJobs = () => {
             </div>
 
             {/* Job Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
-              {filteredJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="bg-white p-6 rounded-xl shadow-md hover:shadow-2xl transition duration-300"
-                >
-                  <h2 className="text-xl font-bold text-teal-700">{job.title}</h2>
-                  <p className="text-gray-600">{job.company}</p>
-                  <p className="text-gray-500">{job.location}</p>
-                  <p className="text-gray-500">{job.type}</p>
-                  <p className="text-gray-700 font-semibold">{job.salary}</p>
-                  <button className="w-full mt-4 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition duration-300">
-                    Apply Now
-                  </button>
-                </div>
-              ))}
-            </div>
+            {loading && <p className="text-teal-700 text-center">Loading jobs...</p>}
+            {error && <p className="text-red-500 text-center">{error}</p>}
+            {!loading && !error && filteredJobs.length === 0 && (
+              <p className="text-teal-700 text-center">No jobs available.</p>
+            )}
+            {!loading && !error && filteredJobs.length > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6">
+                {filteredJobs.map((job) => (
+                  <div
+                    key={job._id}
+                    className="bg-white p-6 rounded-xl shadow-md hover:shadow-2xl transition duration-300"
+                  >
+                    <h2 className="text-xl font-bold text-teal-700">{job.title}</h2>
+                    <p className="text-gray-600">{job.company}</p>
+                    <p className="text-gray-500">{job.location}</p>
+                    <p className="text-gray-500">{job.jobType}</p>
+                    <p className="text-gray-700 font-semibold">Rs.{job.salary}</p>
+                    <button className="w-full mt-4 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition duration-300">
+                      Apply Now
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       </div>

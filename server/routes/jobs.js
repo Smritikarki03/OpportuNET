@@ -4,6 +4,7 @@ const Job = require('../models/Job');
 
 // POST a new job
 router.post('/', async (req, res) => {
+  console.log('Received POST request to /api/jobs:', req.body);
   const {
     title,
     description,
@@ -27,7 +28,6 @@ router.post('/', async (req, res) => {
       experienceLevel,
       noOfPositions,
       company,
-      postedBy: req.user ? req.user._id : null, // Optional: If you have user authentication
     });
 
     await newJob.save();
@@ -36,6 +36,22 @@ router.post('/', async (req, res) => {
     console.error('Error posting job:', error);
     res.status(500).json({ message: 'Error posting job', error: error.message });
   }
+});
+
+// GET all jobs
+router.get('/', async (req, res) => {
+  try {
+    const jobs = await Job.find(); // Fetch all jobs from the database
+    res.status(200).json(jobs);
+  } catch (error) {
+    console.error('Error fetching jobs:', error);
+    res.status(500).json({ message: 'Error fetching jobs', error: error.message });
+  }
+});
+
+// Test route to confirm the prefix is working
+router.get('/test', (req, res) => {
+  res.json({ message: 'Test route working' });
 });
 
 module.exports = router;
