@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import axios from 'axios';
@@ -43,6 +44,26 @@ const BrowseJobs = () => {
 
     fetchJobs();
   }, []);
+
+  const handleSaveForLater = async (jobId) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        alert('Please log in to save jobs.');
+        return;
+      }
+
+      await axios.post(
+        'http://localhost:5000/api/saved-jobs',
+        { jobId },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      alert('Job saved for later!');
+    } catch (err) {
+      console.error('Error saving job:', err);
+      alert('Failed to save job: ' + (err.response?.data?.message || err.message));
+    }
+  };
 
   const filteredJobs = jobs.filter((job) => {
     // Convert salary to a number for comparison
@@ -150,14 +171,25 @@ const BrowseJobs = () => {
                     key={job._id}
                     className="bg-white p-6 rounded-xl shadow-md hover:shadow-2xl transition duration-300"
                   >
-                    <h2 className="text-xl font-bold text-teal-700">{job.title}</h2>
+                    <Link to={`/description/${job._id}`}>
+                      <h2 className="text-xl font-bold text-teal-700 hover:underline">{job.title}</h2>
+                    </Link>
                     <p className="text-gray-600">{job.company}</p>
                     <p className="text-gray-500">{job.location}</p>
                     <p className="text-gray-500">{job.jobType}</p>
                     <p className="text-gray-700 font-semibold">Rs.{job.salary}</p>
-                    <button className="w-full mt-4 bg-teal-700 text-white px-4 py-2 rounded-lg hover:bg-teal-800 transition duration-300">
-                      Apply Now
-                    </button>
+                    <div className="flex space-x-4 mt-4">
+                      <Link to={`/description/${job._id }`} className="w-1/2">
+                        <button className="w-full bg-gray-200 text-black px-4 py-2 rounded-lg hover:bg-teal-200 transition duration-300">
+                          Details
+                        </button>
+                      </Link>
+                      <button
+                        onClick={() => handleSaveForLater(job._id)}
+                        className="w-1/2 bg-teal-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
+                        Save for Later
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

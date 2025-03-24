@@ -11,7 +11,7 @@ const JobPosting = () => {
     jobType: '',
     experienceLevel: '',
     noOfPositions: 0,
-    company: '',
+    company: '', // Start with an empty string
   });
 
   const handleChange = (e) => {
@@ -147,19 +147,15 @@ const JobPosting = () => {
         </div>
 
         <div style={styles.inputGroup}>
-          <label style={styles.label}>Select a Company</label>
-          <select
+          <label style={styles.label}>Company Name</label>
+          <input
+            type="text"
             name="company"
             value={job.company}
             onChange={handleChange}
             required
             style={styles.input}
-          >
-            <option value="">Select a Company</option>
-            <option value="Company A">Company A</option>
-            <option value="Company B">Company B</option>
-            <option value="New">New</option>
-          </select>
+          />
         </div>
 
         <button type="submit" style={styles.button}>Post New Job</button>

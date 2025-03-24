@@ -32,6 +32,8 @@ const Login = () => {
         localStorage.setItem("auth", token);
         localStorage.setItem("userName", userName);
         localStorage.setItem("userRole", user.role);
+        localStorage.setItem("userId", user.id); // Store user ID
+        localStorage.setItem("isCompanySetup", user.isCompanySetup.toString()); // Store isCompanySetup flag
 
         if (user.role === "admin") {
           navigate("/AdminDB");

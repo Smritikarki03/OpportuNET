@@ -2,20 +2,19 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
-import CompanySetupModal from "../Components/CompanySetupModal";
+// import CompanySetupModal from "../Components/CompanySetupModal";
 import axios from 'axios';
 
 const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
-  const [newJobs, setNewJobs] = useState([]); // Will be populated with fetched jobs
+  const [newJobs, setNewJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
-  const [showCompanySetupModal, setShowCompanySetupModal] = useState(false);
+  // const [showCompanySetupModal, setShowCompanySetupModal] = useState(false);
   const [userId, setUserId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Fetch jobs from the backend for the "New Jobs" section
     const fetchNewJobs = async () => {
       try {
         const token = localStorage.getItem('token');
@@ -27,13 +26,11 @@ const HomePage = () => {
         setNewJobs(response.data);
       } catch (error) {
         console.error('Error fetching new jobs:', error);
-        // Optionally, set an error state to display to the user
       }
     };
 
     fetchNewJobs();
 
-    // Check login state and role
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
       const storedUserRole = localStorage.getItem("userRole");
@@ -45,11 +42,11 @@ const HomePage = () => {
         setUserRole(storedUserRole || "");
         setUserId(storedUserId || null);
 
-        if (storedUserRole === "employer" && storedUserId) {
-          if (storedIsCompanySetup === "false") {
-            setShowCompanySetupModal(true);
-          }
-        }
+        // if (storedUserRole === "employer" && storedUserId) {
+        //   if (storedIsCompanySetup === "false") {
+        //     setShowCompanySetupModal(true);
+        //   }
+        // }
       } else {
         setIsLoggedIn(false);
         setUserRole("");
@@ -149,25 +146,24 @@ const HomePage = () => {
                   key={job._id}
                   className="relative bg-gradient-to-br from-teal-100 to-teal-200 text-teal-900 p-6 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
                 >
-                  {/* Decorative Element */}
                   <div className="absolute top-0 left-0 w-16 h-16 bg-teal-600 rounded-br-full opacity-20"></div>
                   <div className="relative z-10">
-                    <h3 className="text-2xl font-bold mb-2">{job.title}</h3>
+                    <h3 className="text-xl font-bold mb-1">{job.title}</h3>
                     <p className="text-teal-800 font-medium">{job.company}</p>
-                    <p className="text-teal-700">{job.location}</p>
-                    <div className="mt-4 flex flex-wrap gap-9">
-                      <span className="bg-teal-600 text-white text-sm font-semibold px-3 py-1 rounded-full">
+                    <p className="text-teal-700 mb-3">{job.location}</p>
+                    <div className="flex flex-wrap gap-10 mb-3">
+                      <span className="bg-teal-600 text-white text-xs font-semibold px-2 py-1 rounded-full">
                         {job.jobType}
                       </span>
-                      <span className="bg-teal-500 text-white text-sm font-semibold px-3 py-1 rounded-full">
+                      <span className="bg-teal-500 text-white text-xs font-semibold px-2 py-1 rounded-full">
                         Rs. {job.salary}
                       </span>
-                      <span className="bg-teal-400 text-teal-900 text-sm font-semibold px-3 py-1 rounded-full">
+                      <span className="bg-teal-400 text-teal-900 text-xs font-semibold px-2 py-1 rounded-full">
                         {job.noOfPositions} Position{job.noOfPositions !== 1 ? 's' : ''}
                       </span>
                     </div>
-                    <p className="mt-3 text-teal-800 text-sm line-clamp-2">{job.description}</p>
-                    <button className="mt-4 w-full bg-teal-700 text-white py-2 rounded-lg hover:bg-teal-800 transition">
+                    <p className="text-teal-800 text-sm line-clamp-2 mb-4">{job.description}</p>
+                    <button className="w-full bg-teal-700 text-white py-2 rounded-lg hover:bg-teal-800 transition">
                       Apply Now
                     </button>
                   </div>
@@ -185,7 +181,7 @@ const HomePage = () => {
         </button>
       </div>
 
-      {showCompanySetupModal && (
+      {/* {showCompanySetupModal && (
         <CompanySetupModal
           userId={userId}
           onClose={() => {
@@ -193,7 +189,7 @@ const HomePage = () => {
             localStorage.setItem("isCompanySetup", "true");
           }}
         />
-      )}
+      )} */}
 
       <Footer />
     </div>

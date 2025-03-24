@@ -1,60 +1,69 @@
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/User');  // Ensure the path is correct
+const userModel = require('../models/User');
 
 // Middleware to authenticate user
 const authenticate = (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', ''); // Extract the token
+  const token = req.header('Authorization')?.replace('Bearer ', '');
 
   if (!token) {
     return res.status(401).json({ message: 'Access denied. No token provided.' });
   }
 
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET); // Decode the token
-    req.user = decoded; // Attach decoded user info to the request
-    next(); // Proceed to the next middleware or route handler
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded.id) {
+      return res.status(400).json({ message: 'Invalid token: Missing user ID.' });
+    }
+    req.user = { id: decoded.id }; // Attach minimal user info
+    next();
   } catch (error) {
-    return res.status(400).json({ message: 'Invalid token' });
+    console.error('Authentication error:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token has expired. Please log in again.' });
+    }
+    return res.status(400).json({ message: 'Invalid token.' });
   }
 };
 
 // Middleware to assign Employer role automatically during registration
 const assignEmployerRole = (req, res, next) => {
-  req.body.role = "employer"; // Automatically assign the role as "Employer"
+  if (!req.body) {
+    return res.status(400).json({ message: 'Request body is missing.' });
+  }
+  req.body.role = 'employer';
   next();
 };
 
 // Middleware to authenticate admin and verify role
 const authenticateAdmin = async (req, res, next) => {
-  try {
-    const token = req.header('Authorization')?.replace('Bearer ', ''); // Extract token from header
+  const token = req.header('Authorization')?.replace('Bearer ', '');
 
-    if (!token) {
-      return res.status(401).json({ message: 'Access denied. No token provided.' });
+  if (!token) {
+    return res.status(401).json({ message: 'Access denied. No token provided.' });
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    if (!decoded.id) {
+      return res.status(400).json({ message: 'Invalid token: Missing user ID.' });
     }
 
-    // Decode the token using JWT_SECRET from environment variables
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // Find user by decoded ID
-    const user = await userModel.findById(decoded.id);  // Ensure you're matching `decoded.id` with the `_id` field
-
-    // If user doesn't exist
+    const user = await userModel.findById(decoded.id);
     if (!user) {
       return res.status(401).json({ message: 'Authentication failed. User not found.' });
     }
 
-    // Check if the user is an admin
     if (user.role !== 'admin') {
       return res.status(403).json({ message: 'You are not authorized to access this route.' });
     }
 
-    // Attach the user to the request object for further processing
-    req.user = user;
-    next(); // Allow the request to continue
-
+    req.user = { id: decoded.id, role: user.role };
+    next();
   } catch (error) {
-    console.error(error);
+    console.error('Admin authentication error:', error.message);
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token has expired. Please log in again.' });
+    }
     return res.status(401).json({ message: 'Authentication failed. Invalid token.' });
   }
 };

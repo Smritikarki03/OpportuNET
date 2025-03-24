@@ -24,9 +24,12 @@ import HelpPage from './pages/help';
 import ContactPage from './pages/Contact';
 import CV from './pages/CV';
 import AdminNotifications from './Components/AdminNotifications';
-// import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
-// import BrowseJobsPage from './pages/BrowseJobsPage';
 import JobPosting from './Components/JobPost';
+// import CompanyProfile from './pages/Employer/CompanyProfile'; 
+// import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
+import JobDescription from './pages/JobDescription';
+
+
 const App = () => {
   return (
       <div className="App">
@@ -56,8 +59,11 @@ const App = () => {
           <Route path="/CV" element={<CV/>} />
           <Route path="/AdminNotifications" element={<AdminNotifications/>} />
           <Route path="/JobPost" element={<JobPosting/>} />
+          {/* <Route path="/CompanyProfile" element={<CompanyProfile />} /> 
+          <Route path="/EditCompanyProfile" element={<EditCompanyProfile />} /> 
+            */}
+          <Route path="/description/:id" element={<JobDescription />} />
 
-          
 
 
 
