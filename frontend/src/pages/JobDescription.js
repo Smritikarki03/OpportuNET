@@ -27,10 +27,12 @@ const JobDescription = () => {
 
   const handleApply = () => {
     // Redirect to the apply page with the job ID
-    navigate(`/apply/${id}`);
+    navigate(`/Apply/${id}`);
   };
 
   if (loading) {
+
+    
     return <div className="text-center text-teal-700">Loading...</div>;
   }
 
@@ -68,7 +70,7 @@ const JobDescription = () => {
               <p><strong>Description:</strong> {job.description}</p>
               <p><strong>Experience:</strong> {job.experienceLevel}</p>
               <p><strong>Salary:</strong> {job.salary} LPA</p>
-              <p><strong>Total Applicants:</strong> 0</p> {/* Hardcoded for now */}
+              <p><strong>Total Applicants:</strong> {job.totalApplicants}</p>
               <p><strong>Posted Date:</strong> {new Date(job.createdAt).toISOString().split('T')[0]}</p>
             </div>
           </div>

@@ -28,6 +28,7 @@ import JobPosting from './Components/JobPost';
 // import CompanyProfile from './pages/Employer/CompanyProfile'; 
 // import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
 import JobDescription from './pages/JobDescription';
+import ApplyPage from './pages/Apply';
 
 
 const App = () => {
@@ -63,7 +64,8 @@ const App = () => {
           <Route path="/EditCompanyProfile" element={<EditCompanyProfile />} /> 
             */}
           <Route path="/description/:id" element={<JobDescription />} />
-
+          <Route path="/apply/:id" element={<ApplyPage />} />
+          
 
 
 

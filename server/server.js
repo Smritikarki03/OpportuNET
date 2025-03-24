@@ -10,7 +10,7 @@ const app = express();
 // const companiesRoutes = require('./routes/companies'); // Add this line
 // const path = require('path');  // Add this line
 const mongoose = require('mongoose');
-
+const applicationRoutes = require('./routes/applications'); // Add this
 
 // Connect to MongoDB
 connectDB();
@@ -33,7 +33,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/jobs', jobRoutes); // Add job routes
 // app.use('/api/companies', companiesRoutes); 
-
+app.use('/api/applications', applicationRoutes); // Add application routes
 
 // // MongoDB connection
 // mongoose.connect('mongodb://localhost:27017/opportunet', {
