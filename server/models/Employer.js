@@ -3,17 +3,17 @@ const router = express.Router();
 const Employer = require("../models/Employer");
 const Company = require("../models/Company");
 
-// Check employer status (isCompanySetup)
-router.get("/:id", async (req, res) => {
-  try {
-    const employer = await Employer.findById(req.params.id);
-    if (!employer) return res.status(404).json({ message: "Employer not found" });
+// // Check employer status (isCompanySetup)
+// router.get("/:id", async (req, res) => {
+//   try {
+//     const employer = await Employer.findById(req.params.id);
+//     if (!employer) return res.status(404).json({ message: "Employer not found" });
 
-    res.json({ isCompanySetup: employer.isCompanySetup });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error });
-  }
-});
+//     res.json({ isCompanySetup: employer.isCompanySetup });
+//   } catch (error) {
+//     res.status(500).json({ message: "Server error", error });
+//   }
+// });
 
 // Setup company profile
 router.post("/setup-company", async (req, res) => {

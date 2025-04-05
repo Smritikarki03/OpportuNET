@@ -1,87 +1,247 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { FaTachometerAlt, FaBriefcase, FaUsers, FaFileAlt, FaBell } from "react-icons/fa";
+import { MdCheckCircle, MdCancel } from "react-icons/md";
 
 const AdminDashboard = () => {
   const [jobs, setJobs] = useState([
     { id: 1, company: "Leapforg", title: "Frontend Developer" },
     { id: 2, company: "Cotiviti", title: "Backend Engineer" },
   ]);
+  const [jobSeekers, setJobSeekers] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const navigate = useNavigate(); // Hook for navigation
+  const navigate = useNavigate();
 
-  const approveJob = (id) => setJobs(jobs.filter(job => job.id !== id));
-  const rejectJob = (id) => setJobs(jobs.filter(job => job.id !== id));
+  const approveJob = (id) => setJobs(jobs.filter((job) => job.id !== id));
+  const rejectJob = (id) => setJobs(jobs.filter((job) => job.id !== id));
+
+  // Fetch job seekers and employees periodically
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+
+        // Fetch job seekers
+        const jobSeekersRes = await fetch("http://localhost:3001/jobseekers");
+        if (!jobSeekersRes.ok) throw new Error("Failed to fetch job seekers");
+        const jobSeekersData = await jobSeekersRes.json();
+        setJobSeekers(jobSeekersData);
+
+        // Fetch employees
+        const employeesRes = await fetch("http://localhost:3001/employees");
+        if (!employeesRes.ok) throw new Error("Failed to fetch employees");
+        const employeesData = await employeesRes.json();
+        setEmployees(employeesData);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    // Initial fetch
+    fetchData();
+
+    // Poll every 15 seconds for updates
+    const interval = setInterval(fetchData, 15000);
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-100 text-gray-900">
-      
-      <div className="flex flex-1">
-        {/* Sidebar */}
-        <aside className="w-64 bg-teal-700 text-white p-5">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold">⚡ Admin Panel</h2>
-          </div>
-          <ul>
-            <li className="mb-4 hover:bg-teal-600 p-2 rounded flex items-center">
-              📊 <NavLink to="/dashboard" className="ml-2">Dashboard</NavLink>
-            </li>
-            <li className="mb-4 hover:bg-teal-600 p-2 rounded flex items-center">
-              💼 <NavLink to="/manage-jobs" className="ml-2">Manage Jobs</NavLink>
-            </li>
-            <li className="mb-4 hover:bg-teal-600 p-2 rounded flex items-center">
-              👥 <NavLink to="/users" className="ml-2">User Management</NavLink>
-            </li>
-            <li className="mb-4 hover:bg-teal-600 p-2 rounded flex items-center">
-              📑 <NavLink to="/reports" className="ml-2">Reports</NavLink>
-            </li>
-          </ul>
-        </aside>
-
-        {/* Main Content */}
-        <main className="flex-1 p-6">
-          {/* Top Bar with Notification */}
-          <div className="flex justify-between items-center mb-6">
-            <h1 className="text-3xl font-semibold text-teal-700">🚀 Admin Dashboard</h1>
-
-            {/* Notification Icon (Clickable) */}
-            <div 
-              className="relative cursor-pointer"
-              onClick={() => navigate("/AdminNotifications")} // Navigate to notifications page
+    <div className="flex min-h-screen bg-gray-50 text-gray-800">
+      {/* Sidebar */}
+      <aside className="w-64 bg-teal-800 text-white p-6 shadow-lg">
+        <h2 className="text-xl font-semibold mb-8">Admin Panel</h2>
+        <ul>
+          <li className="mb-4">
+            <NavLink
+              to="/dashboard"
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-colors ${
+                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
+                }`
+              }
             >
-              <span className="text-2xl">🔔</span>
-              <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                3
-              </span>
-            </div>
-          </div>
+              <FaTachometerAlt className="mr-3" />
+              Dashboard
+            </NavLink>
+          </li>
+          <li className="mb-4">
+            <NavLink
+              to="/manage-jobs"
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-colors ${
+                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
+                }`
+              }
+            >
+              <FaBriefcase className="mr-3" />
+              Manage Jobs
+            </NavLink>
+          </li>
+          <li className="mb-4">
+            <NavLink
+              to="/users"
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-colors ${
+                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
+                }`
+              }
+            >
+              <FaUsers className="mr-3" />
+              User Management
+            </NavLink>
+          </li>
+          <li className="mb-4">
+            <NavLink
+              to="/reports"
+              className={({ isActive }) =>
+                `flex items-center p-3 rounded-lg transition-colors ${
+                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
+                }`
+              }
+            >
+              <FaFileAlt className="mr-3" />
+              Reports
+            </NavLink>
+          </li>
+        </ul>
+      </aside>
 
-          {/* Job Approvals Section */}
-          <div className="bg-white p-6 rounded-lg shadow-md mb-6">
-            <h3 className="text-2xl font-semibold text-teal-700 mb-4">📌 Pending Job Approvals</h3>
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-semibold text-teal-800">Admin Dashboard</h1>
+          <div
+            className="relative cursor-pointer hover:scale-105 transition-transform"
+            onClick={() => navigate("/AdminNotifications")}
+          >
+            <FaBell className="text-3xl text-teal-800" />
+            <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+              3
+            </span>
+          </div>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-600">Total Job Seekers</h3>
+            <p className="text-2xl font-semibold text-teal-800">{jobSeekers.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-600">Total Employees</h3>
+            <p className="text-2xl font-semibold text-teal-800">{employees.length}</p>
+          </div>
+          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            <h3 className="text-sm font-medium text-gray-600">Pending Approvals</h3>
+            <p className="text-2xl font-semibold text-teal-800">{jobs.length}</p>
+          </div>
+        </div>
+
+        {/* Job Seekers Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+          <h3 className="text-lg font-semibold text-teal-800 mb-4">Job Seekers</h3>
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="w-6 h-6 border-3 border-teal-800 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : jobSeekers.length === 0 ? (
+            <p className="text-gray-600">No job seekers found.</p>
+          ) : (
             <table className="w-full table-auto">
-              <thead className="border-b bg-teal-700 text-white">
+              <thead className="bg-teal-50 text-teal-800">
                 <tr>
-                  <th className="py-2 text-left p-3">🏢 Company</th>
-                  <th className="py-2 text-left p-3">💼 Job Title</th>
-                  <th className="py-2 text-left p-3">✅ Actions</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Name</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Status</th>
                 </tr>
               </thead>
               <tbody>
-                {jobs.map(job => (
-                  <tr key={job.id} className="border-b hover:bg-gray-100">
-                    <td className="py-2 p-3">{job.company}</td>
-                    <td className="py-2 p-3">{job.title}</td>
-                    <td className="py-2 p-3 flex space-x-4">
-                      <button onClick={() => approveJob(job.id)} className="text-green-600 hover:text-green-800 text-lg">✔️ Approve</button>
-                      <button onClick={() => rejectJob(job.id)} className="text-red-600 hover:text-red-800 text-lg">❌ Reject</button>
+                {jobSeekers.map((seeker) => (
+                  <tr key={seeker.id} className="border-b hover:bg-gray-50 transition">
+                    <td className="py-3 px-4">{seeker.name}</td>
+                    <td className="py-3 px-4">{seeker.status}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Employees Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
+          <h3 className="text-lg font-semibold text-teal-800 mb-4">Employees</h3>
+          {loading ? (
+            <div className="flex justify-center">
+              <div className="w-6 h-6 border-3 border-teal-800 border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : employees.length === 0 ? (
+            <p className="text-gray-600">No employees found.</p>
+          ) : (
+            <table className="w-full table-auto">
+              <thead className="bg-teal-50 text-teal-800">
+                <tr>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Name</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {employees.map((employee) => (
+                  <tr key={employee.id} className="border-b hover:bg-gray-50 transition">
+                    <td className="py-3 px-4">{employee.name}</td>
+                    <td className="py-3 px-4">{employee.role}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+
+        {/* Job Approvals Section */}
+        <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+          <h3 className="text-lg font-semibold text-teal-800 mb-4">Pending Job Approvals</h3>
+          {jobs.length === 0 ? (
+            <p className="text-gray-600">No pending job approvals.</p>
+          ) : (
+            <table className="w-full table-auto">
+              <thead className="bg-teal-50 text-teal-800">
+                <tr>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Company</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Job Title</th>
+                  <th className="py-3 px-4 text-left text-sm font-medium">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobs.map((job) => (
+                  <tr key={job.id} className="border-b hover:bg-gray-50 transition">
+                    <td className="py-3 px-4">{job.company}</td>
+                    <td className="py-3 px-4">{job.title}</td>
+                    <td className="py-3 px-4 flex space-x-3">
+                      <button
+                        onClick={() => approveJob(job.id)}
+                        className="bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition flex items-center text-sm"
+                      >
+                        <MdCheckCircle className="mr-1" /> Approve
+                      </button>
+                      <button
+                        onClick={() => rejectJob(job.id)}
+                        className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center text-sm"
+                      >
+                        <MdCancel className="mr-1" /> Reject
+                      </button>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-          </div>
-        </main>
-      </div>
+          )}
+        </div>
+      </main>
     </div>
   );
 };

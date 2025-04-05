@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
-const Application = require('../models/Application');  // Ensure this path is correct
-const Job = require('../models/Job');  // Ensure this path is correct
+const Application = require('../models/Application');
+const Job = require('../models/Job');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -12,8 +12,7 @@ const storage = multer.diskStorage({
     cb(null, Date.now() + '-' + file.originalname);
   },
 });
-const updatedJob = await Job.findbyIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } });
-console.log('Updated job:', updatedJob);
+
 const upload = multer({
   storage,
   fileFilter: (req, file, cb) => {
@@ -34,19 +33,19 @@ router.post('/', upload.single('resume'), async (req, res) => {
     const newApplication = new Application({ jobId, userId, coverLetter });
     await newApplication.save();
 
-
     // Increment total applicants in the job listing
     await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
-    res.status(201).json({ message: 'Application submitted successfully' });
-
+    
+    // Get the updated job (after incrementing total applicants)
     const updatedJob = await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
     console.log('Updated job:', updatedJob);
-    
+
+    res.status(201).json({ message: 'Application submitted successfully' });
+
   } catch (error) {
     console.error('Error submitting application:', error);
     res.status(500).json({ message: 'Error submitting application', error: error.message });
   }
-  
 });
 
 module.exports = router;
