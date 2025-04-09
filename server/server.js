@@ -34,6 +34,20 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/jobs', jobRoutes); // Add job routes
 // app.use('/api/companies', companiesRoutes); 
 app.use('/api/applications', applicationRoutes); // Add application routes
+// DELETE a job by ID
+app.delete("/api/jobs/:id", async (req, res) => {
+  try {
+    const jobId = req.params.id;
+    console.log("Received DELETE request for job ID:", jobId); // Add this for debugging
+    const job = await Job.findByIdAndDelete(jobId);
+    if (!job) {
+      return res.status(404).json({ error: "Job not found" });
+    }
+    res.status(200).json({ message: "Job deleted successfully" });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // // MongoDB connection
 // mongoose.connect('mongodb://localhost:27017/opportunet', {

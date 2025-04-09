@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { FaTachometerAlt, FaBriefcase, FaUsers, FaFileAlt, FaBell } from "react-icons/fa";
 import { MdCheckCircle, MdCancel } from "react-icons/md";
+import Sidebar from "../../Components/Sidebar"; // Ensure this path is correct
 
 const AdminDashboard = () => {
   const [jobs, setJobs] = useState([
@@ -53,64 +54,8 @@ const AdminDashboard = () => {
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-800">
-      {/* Sidebar */}
-      <aside className="w-64 bg-teal-800 text-white p-6 shadow-lg">
-        <h2 className="text-xl font-semibold mb-8">Admin Panel</h2>
-        <ul>
-          <li className="mb-4">
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors ${
-                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
-                }`
-              }
-            >
-              <FaTachometerAlt className="mr-3" />
-              Dashboard
-            </NavLink>
-          </li>
-          <li className="mb-4">
-            <NavLink
-              to="/manage-jobs"
-              className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors ${
-                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
-                }`
-              }
-            >
-              <FaBriefcase className="mr-3" />
-              Manage Jobs
-            </NavLink>
-          </li>
-          <li className="mb-4">
-            <NavLink
-              to="/users"
-              className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors ${
-                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
-                }`
-              }
-            >
-              <FaUsers className="mr-3" />
-              User Management
-            </NavLink>
-          </li>
-          <li className="mb-4">
-            <NavLink
-              to="/reports"
-              className={({ isActive }) =>
-                `flex items-center p-3 rounded-lg transition-colors ${
-                  isActive ? "bg-teal-700" : "hover:bg-teal-700"
-                }`
-              }
-            >
-              <FaFileAlt className="mr-3" />
-              Reports
-            </NavLink>
-          </li>
-        </ul>
-      </aside>
+      {/* Use the imported Sidebar component */}
+      <Sidebar />
 
       {/* Main Content */}
       <main className="flex-1 p-8">

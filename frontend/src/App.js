@@ -18,7 +18,6 @@ import EditEMProfile from './pages/Employer/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
 import EmployerDashboard from './pages/Employer/EmployerDB';
 import AdminDashboard from './pages/Admin/AdminDB';
-import AdminDbpage from './pages/Admin/AdminDbpage';
 import BrowseJobs from './pages/Browse';
 import HelpPage from './pages/help';
 import ContactPage from './pages/Contact';
@@ -29,6 +28,7 @@ import JobPosting from './Components/JobPost';
 // import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
 import JobDescription from './pages/JobDescription';
 import ApplyPage from './pages/Apply';
+import ManageJobs from './pages/Admin/ManageJob';
 
 
 const App = () => {
@@ -53,7 +53,6 @@ const App = () => {
           <Route path="/reset-password" element={<ResetPassword/>} />
           <Route path="/EmployerDB" element={<EmployerDashboard/>} />
           <Route path="/AdminDB" element={<AdminDashboard/>} />
-          <Route path="/AdminDbpage" element={<AdminDbpage/>} />
           <Route path="/Browse" element={<BrowseJobs/>} />
           <Route path="/help" element={<HelpPage/>} />
           <Route path="/Contact" element={<ContactPage/>} />
@@ -65,6 +64,7 @@ const App = () => {
             */}
           <Route path="/description/:id" element={<JobDescription />} />
           <Route path="/apply/:id" element={<ApplyPage />} />
+          <Route path="/ManageJob" element={<ManageJobs />} />
           
 
 
