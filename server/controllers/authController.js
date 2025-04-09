@@ -190,8 +190,6 @@ exports.login = async (req, res) => {
   }
 };
 
-// ... (rest of the controller remains unchanged: forgotPassword, resetPassword, userInfo, updateProfileViewed)
-
 const transporter = nodemailer.createTransport({
   service: "Gmail",
   auth: {
@@ -287,7 +285,21 @@ exports.userInfo = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    res.json(user);
+    const userData = {
+      name: user.name,
+      email: user.email,
+      phone: user.phone,
+      role: user.role,
+      resume: user.resume,
+      skills: user.skills,
+      image: user.image,
+      bio: user.bio, // Include bio field
+      isProfileViewed: user.isProfileViewed,
+      appliedJobs: user.appliedJobs,
+    };
+    console.log("User info response:", userData);
+
+    res.json(userData);
   } catch (error) {
     console.error("User info error:", error);
     res.status(500).json({
@@ -316,5 +328,61 @@ exports.updateProfileViewed = async (req, res) => {
   } catch (error) {
     console.error("Update profile viewed error:", error);
     res.status(500).json({ success: false, message: "Server error", error });
+  }
+};
+
+// Add the editProfile endpoint
+exports.editProfile = async (req, res) => {
+  try {
+    console.log("Request body:", req.body);
+    console.log("Request files:", req.files);
+
+    const { fullName, phone, skills, bio } = req.body; // Extract bio
+    const userId = req.user.id;
+
+    const updateData = {
+      name: fullName,
+      phone,
+      skills: skills ? skills.split(",").map(skill => skill.trim()) : [],
+      bio, // Add bio to updateData
+    };
+
+    if (req.files && req.files['image']) {
+      updateData.image = `/uploads/${req.files['image'][0].filename}`;
+    }
+    if (req.files && req.files['cv']) {
+      updateData.resume = `/uploads/${req.files['cv'][0].filename}`;
+    }
+
+    const user = await User.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log("Updated user in database:", user);
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        resume: user.resume,
+        skills: user.skills,
+        image: user.image,
+        bio: user.bio, // Include bio in response
+        isProfileViewed: user.isProfileViewed,
+        appliedJobs: user.appliedJobs,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

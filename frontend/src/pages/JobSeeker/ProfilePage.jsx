@@ -32,10 +32,12 @@ const ProfilePage = () => {
       });
 
       const result = await response.json();
+      console.log("User data from server:", result);
 
       if (response.ok) {
         setUser(result);
         localStorage.setItem("user", JSON.stringify(result));
+        console.log("User state set:", result);
 
         // Check if profile is incomplete
         const isProfileIncomplete = !result.name || !result.skills?.length || !result.resume;
@@ -61,18 +63,33 @@ const ProfilePage = () => {
   if (error) return <div className="text-center text-red-500">{error}</div>;
   if (!user) return <div className="text-center text-gray-500">Please log in to view your profile.</div>;
 
+  console.log("Rendering user:", user);
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       {/* Profile Card */}
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
-            <div className="w-12 h-12 bg-gray-200 rounded-full flex items-center justify-center">
-              <span className="text-gray-500">Profile</span>
+            <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
+              {user.image ? (
+                <img
+                  src={`http://localhost:5000${user.image}`}
+                  alt="Profile"
+                  className="w-full h-full rounded-full object-cover"
+                  onError={(e) => console.log("Image load error:", e, "URL:", `http://localhost:5000${user.image}`)}
+                  onLoad={() => console.log("Image loaded successfully:", `http://localhost:5000${user.image}`)}
+                />
+              ) : (
+                <span className="text-gray-500">Profile</span>
+              )}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-800">{user.name || "User Name"}</h1>
+              <h1 className="text-xl font-bold text-teal-700">{user.name || "User Name"}</h1>
               <p className="text-gray-600">{user.role === "jobseeker" ? "Job Seeker" : user.role}</p>
+              {user.bio && (
+                <p className="text-teal-600 italic mt-1">{user.bio}</p>
+              )}
               <p className="text-gray-600">{user.email || "Not provided"}</p>
               <p className="text-gray-600">{user.phone || "9000000000"}</p>
             </div>
@@ -88,11 +105,11 @@ const ProfilePage = () => {
 
         {/* Skills Section */}
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-800">Skills</h2>
+          <h2 className="text-lg font-semibold text-teal-700">Skills</h2>
           <div className="mt-2 flex flex-wrap gap-2">
             {user.skills?.length > 0 ? (
               user.skills.map((skill, index) => (
-                <span key={index} className="bg-gray-800 text-white text-sm font-medium px-3 py-1 rounded-full">
+                <span key={index} className="bg-teal-600 text-white text-sm font-medium px-3 py-1 rounded-full">
                   {skill}
                 </span>
               ))
@@ -104,18 +121,27 @@ const ProfilePage = () => {
 
         {/* Resume Section */}
         <div className="mt-6">
-          <h2 className="text-lg font-semibold text-gray-800">Resume</h2>
-          <p className="mt-2 text-blue-600">
-            <a href={user.resume || "#"} target="_blank" rel="noopener noreferrer">
-              {user.resume ? "View Resume" : "No resume uploaded"}
-            </a>
+          <h2 className="text-lg font-semibold text-teal-700">Resume</h2>
+          <p className="mt-2 text-teal-600">
+            {user.resume ? (
+              <a
+                href={`http://localhost:5000${user.resume}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => console.log("Resume link clicked:", `http://localhost:5000${user.resume}`)}
+              >
+                View Resume
+              </a>
+            ) : (
+              "No resume uploaded"
+            )}
           </p>
         </div>
       </div>
 
       {/* Applied Jobs Section */}
       <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-4">Applied Jobs</h2>
+        <h2 className="text-lg font-semibold text-teal-700 mb-4">Applied Jobs</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -138,7 +164,7 @@ const ProfilePage = () => {
                         className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
                           job.status === "PENDING"
                             ? "bg-gray-200 text-gray-800"
-                            : "bg-green-200 text-green-800"
+                            : "bg-teal-200 text-teal-800"
                         }`}
                       >
                         {job.status || "N/A"}

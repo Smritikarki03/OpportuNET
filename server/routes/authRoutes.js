@@ -2,8 +2,34 @@ const express = require("express");
 const { register, login, employerRegister, forgotPassword, resetPassword, updateProfileViewed, userInfo } = require("../controllers/authController");
 const { assignEmployerRole } = require("../middleware/authMiddleware");
 const authenticate = require("../middleware/authMiddleware").authenticate;
+const multer = require('multer');
+const userModel = require('../models/User'); // Adjust the path to your User model
 
 const router = express.Router();
+
+// Multer configuration (already defined in server.js, but we need to redefine it here if not passed)
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/'); // Store files in the uploads directory
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, uniqueSuffix + path.extname(file.originalname)); // Unique filename
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
+    }
+  },
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+});
 
 // Authentication Routes
 router.post("/register", register);
@@ -13,6 +39,7 @@ router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);
 router.get("/userInfo", authenticate, userInfo);
 router.post("/updateProfileViewed", authenticate, updateProfileViewed);
+
 // New route for company setup
 router.post("/setup-company", authenticate, async (req, res) => {
   try {
@@ -39,6 +66,59 @@ router.post("/setup-company", authenticate, async (req, res) => {
   } catch (error) {
     console.error("Company setup error:", error);
     res.status(500).json({ success: false, message: "Server error", error });
+  }
+});
+
+// Edit profile endpoint with file uploads using multer
+router.put("/editProfile", authenticate, upload.fields([
+  { name: 'image', maxCount: 1 },
+  { name: 'cv', maxCount: 1 },
+]), async (req, res) => {
+  try {
+    const { fullName, phone, skills } = req.body;
+    const userId = req.user.id; // From auth middleware
+
+    const updateData = {
+      name: fullName,
+      phone,
+      skills: skills ? skills.split(",").map(skill => skill.trim()) : [],
+    };
+
+    // Handle uploaded files
+    if (req.files['image']) {
+      updateData.image = `/uploads/${req.files['image'][0].filename}`;
+    }
+    if (req.files['cv']) {
+      updateData.resume = `/uploads/${req.files['cv'][0].filename}`;
+    }
+
+    const user = await userModel.findByIdAndUpdate(
+      userId,
+      updateData,
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        resume: user.resume,
+        skills: user.skills,
+        image: user.image,
+        isProfileViewed: user.isProfileViewed,
+        appliedJobs: user.appliedJobs,
+      },
+    });
+  } catch (error) {
+    console.error('Error updating profile:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
