@@ -13,7 +13,7 @@ import EmployerProfile from './pages/Employer/EmployerProfile';
 import EmployerProfilePage from './pages/Employer/ProfileEm';
 import RatingsAndReviews from './pages/Ratings';
 import EditProfile from './pages/JobSeeker/EditProfilePage';
-import EditEmployerProfile from './pages/Employer/EditEP';
+import EditEmployerProfile from './pages/Employer/CompanyProfile';
 import EditEMProfile from './pages/Employer/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
 import EmployerDashboard from './pages/Employer/EmployerDB';
@@ -24,12 +24,12 @@ import ContactPage from './pages/Contact';
 import CV from './pages/CV';
 import AdminNotifications from './Components/AdminNotifications';
 import JobPosting from './Components/JobPost';
-// import CompanyProfile from './pages/Employer/CompanyProfile'; 
+import CompanyProfile from './pages/Employer/CompanyProfile'; 
 // import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
 import JobDescription from './pages/JobDescription';
 import ApplyPage from './pages/Apply';
 import ManageJobs from './pages/Admin/ManageJob';
-
+import CompanySU from './pages/Employer/CompanySU';
 
 const App = () => {
   return (
@@ -59,12 +59,11 @@ const App = () => {
           <Route path="/CV" element={<CV/>} />
           <Route path="/AdminNotifications" element={<AdminNotifications/>} />
           <Route path="/JobPost" element={<JobPosting/>} />
-          {/* <Route path="/CompanyProfile" element={<CompanyProfile />} /> 
-          <Route path="/EditCompanyProfile" element={<EditCompanyProfile />} /> 
-            */}
+          <Route path="/CompanySU" element={<CompanySU/>} />
           <Route path="/description/:id" element={<JobDescription />} />
           <Route path="/apply/:id" element={<ApplyPage />} />
           <Route path="/ManageJob" element={<ManageJobs />} />
+          <Route path="/CompanyProfile" element={<CompanyProfile />} />
           
 
 

@@ -16,6 +16,11 @@ function CVGenerator() {
   const [awards, setAwards] = useState([]);
   const [newAward, setNewAward] = useState("");
   const [certificates, setCertificates] = useState([]);
+  const [newCertificate, setNewCertificate] = useState("");
+  const [education, setEducation] = useState([]);
+  const [newEducation, setNewEducation] = useState({ institution: "", degree: "", year: "" });
+  const [workExperience, setWorkExperience] = useState([]);
+  const [newWorkExperience, setNewWorkExperience] = useState({ company: "", role: "", duration: "" });
 
   const languageOptions = [
     "English", "Hindi", "Nepali", "French", "Spanish", "German", "Chinese",
@@ -35,13 +40,6 @@ function CVGenerator() {
     }
   };
 
-  const handleAddCertificate = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setCertificates([...certificates, file.name]);
-    }
-  };
-
   const handleLanguageChange = (e) => {
     const selectedLang = e.target.value;
     if (selectedLang && !languages.includes(selectedLang)) {
@@ -57,6 +55,27 @@ function CVGenerator() {
     if (newAward.trim()) {
       setAwards([...awards, newAward.trim()]);
       setNewAward("");
+    }
+  };
+
+  const handleAddCertificate = () => {
+    if (newCertificate.trim()) {
+      setCertificates([...certificates, newCertificate.trim()]);
+      setNewCertificate("");
+    }
+  };
+
+  const handleAddEducation = () => {
+    if (newEducation.institution.trim() && newEducation.degree.trim() && newEducation.year.trim()) {
+      setEducation([...education, newEducation]);
+      setNewEducation({ institution: "", degree: "", year: "" });
+    }
+  };
+
+  const handleAddWorkExperience = () => {
+    if (newWorkExperience.company.trim() && newWorkExperience.role.trim() && newWorkExperience.duration.trim()) {
+      setWorkExperience([...workExperience, newWorkExperience]);
+      setNewWorkExperience({ company: "", role: "", duration: "" });
     }
   };
 
@@ -95,11 +114,11 @@ function CVGenerator() {
     // Contact Info (normal font)
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text(`📧 Email: ${email || "Not provided"}`, 20, yPosition);
+    doc.text(`Email: ${email || "Not provided"}`, 20, yPosition);
     yPosition += 8;
-    doc.text(`📞 Phone: ${phone || "Not provided"}`, 20, yPosition);
+    doc.text(`Phone: ${phone || "Not provided"}`, 20, yPosition);
     yPosition += 8;
-    doc.text(`🏡 Address: ${address || "Not provided"}`, 20, yPosition);
+    doc.text(`Address: ${address || "Not provided"}`, 20, yPosition);
     yPosition += 10;
 
     // Separator Line
@@ -117,6 +136,40 @@ function CVGenerator() {
     doc.setFont("helvetica", "normal");
     doc.text(aboutMe || "Not provided", 20, yPosition, { maxWidth: 170 });
     yPosition += Math.ceil((aboutMe.length / 170) * 10) + 10;
+
+    // Education (bold heading, bullet points)
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Education", 20, yPosition);
+    yPosition += 8;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    if (education.length > 0) {
+      education.forEach((edu, index) => {
+        doc.text(`• ${edu.degree}, ${edu.institution} (${edu.year})`, 25, yPosition + index * 8);
+      });
+      yPosition += education.length * 8 + 5;
+    } else {
+      doc.text("None", 25, yPosition);
+      yPosition += 10;
+    }
+
+    // Work Experience (bold heading, bullet points)
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Work Experience", 20, yPosition);
+    yPosition += 8;
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+    if (workExperience.length > 0) {
+      workExperience.forEach((work, index) => {
+        doc.text(`• ${work.role}, ${work.company} (${work.duration})`, 25, yPosition + index * 8);
+      });
+      yPosition += workExperience.length * 8 + 5;
+    } else {
+      doc.text("None", 25, yPosition);
+      yPosition += 10;
+    }
 
     // Languages (bold heading, bullet points)
     doc.setFontSize(14);
@@ -186,9 +239,9 @@ function CVGenerator() {
     <div>
       {/* Add Header Component */}
       <Header />
-<br></br>
-<br></br>
-<br></br>
+      <br />
+      <br />
+      <br />
 
       {/* Main Content */}
       <div className="bg-white p-8 rounded-lg shadow-lg max-w-4xl mx-auto border border-teal-700 my-8">
@@ -271,11 +324,79 @@ function CVGenerator() {
                 Add Award
               </button>
             </div>
-            <input
-              type="file"
-              onChange={handleAddCertificate}
-              className="w-full p-3 border border-gray-300 rounded-md mt-4"
-            />
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Add a certificate"
+                value={newCertificate}
+                onChange={(e) => setNewCertificate(e.target.value)}
+                className="w-full p-3 border border-gray-300 rounded-md"
+              />
+              <button
+                onClick={handleAddCertificate}
+                className="mt-2 p-2 bg-teal-700 text-white rounded-md hover:bg-teal-800"
+              >
+                Add Certificate
+              </button>
+            </div>
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Institution"
+                value={newEducation.institution}
+                onChange={(e) => setNewEducation({ ...newEducation, institution: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md"
+              />
+              <input
+                type="text"
+                placeholder="Degree"
+                value={newEducation.degree}
+                onChange={(e) => setNewEducation({ ...newEducation, degree: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md mt-2"
+              />
+              <input
+                type="text"
+                placeholder="Year"
+                value={newEducation.year}
+                onChange={(e) => setNewEducation({ ...newEducation, year: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md mt-2"
+              />
+              <button
+                onClick={handleAddEducation}
+                className="mt-2 p-2 bg-teal-700 text-white rounded-md hover:bg-teal-800"
+              >
+                Add Education
+              </button>
+            </div>
+            <div className="mt-4">
+              <input
+                type="text"
+                placeholder="Company"
+                value={newWorkExperience.company}
+                onChange={(e) => setNewWorkExperience({ ...newWorkExperience, company: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md"
+              />
+              <input
+                type="text"
+                placeholder="Role"
+                value={newWorkExperience.role}
+                onChange={(e) => setNewWorkExperience({ ...newWorkExperience, role: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md mt-2"
+              />
+              <input
+                type="text"
+                placeholder="Duration (e.g., 2020-2022)"
+                value={newWorkExperience.duration}
+                onChange={(e) => setNewWorkExperience({ ...newWorkExperience, duration: e.target.value })}
+                className="w-full p-3 border border-gray-300 rounded-md mt-2"
+              />
+              <button
+                onClick={handleAddWorkExperience}
+                className="mt-2 p-2 bg-teal-700 text-white rounded-md hover:bg-teal-800"
+              >
+                Add Work Experience
+              </button>
+            </div>
             <button
               onClick={handleDownload}
               className="w-full p-3 bg-teal-700 text-white rounded-md hover:bg-teal-800 mt-4"
@@ -302,6 +423,34 @@ function CVGenerator() {
               <strong>About Me:</strong>
             </p>
             <p className="break-words">{aboutMe || "Not provided"}</p>
+            <p>
+              <strong>Education:</strong>
+            </p>
+            <ul className="list-disc pl-5">
+              {education.length > 0 ? (
+                education.map((edu, index) => (
+                  <li key={index}>
+                    {edu.degree}, {edu.institution} ({edu.year})
+                  </li>
+                ))
+              ) : (
+                <li>None</li>
+              )}
+            </ul>
+            <p>
+              <strong>Work Experience:</strong>
+            </p>
+            <ul className="list-disc pl-5">
+              {workExperience.length > 0 ? (
+                workExperience.map((work, index) => (
+                  <li key={index}>
+                    {work.role}, {work.company} ({work.duration})
+                  </li>
+                ))
+              ) : (
+                <li>None</li>
+              )}
+            </ul>
             <p>
               <strong>Languages:</strong>
             </p>

@@ -1,4 +1,3 @@
-// Components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,18 +5,22 @@ const Header = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
+  const [userRole, setUserRole] = useState(""); // Add userRole state
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
       const storedUserName = localStorage.getItem("userName");
+      const storedUserRole = localStorage.getItem("userRole"); // Fetch role
       if (storedAuth && storedUserName) {
         setIsLoggedIn(true);
         setUserName(storedUserName);
+        setUserRole(storedUserRole || ""); // Set role, default to empty string if not present
       } else {
         setIsLoggedIn(false);
         setUserName("");
+        setUserRole("");
       }
     };
 
@@ -32,6 +35,7 @@ const Header = () => {
     localStorage.removeItem("userRole");
     setIsLoggedIn(false);
     setUserName("");
+    setUserRole(""); // Clear role on logout
     setDropdownVisible(false);
     navigate("/");
     window.dispatchEvent(new Event("storage"));
@@ -90,6 +94,16 @@ const Header = () => {
                     >
                       View Profile
                     </Link>
+                    {/* Show Company Profile only if userRole is 'employer' */}
+                    {userRole === "employer" && (
+                      <Link
+                        to="/CompanySU" // Adjust this path to match your routing
+                        className="block px-4 py-2 hover:bg-teal-100 rounded"
+                        onClick={() => setDropdownVisible(false)}
+                      >
+                        Company Profile
+                      </Link>
+                    )}
                     <button
                       onClick={handleLogout}
                       className="block w-full text-left px-4 py-2 hover:bg-teal-100 rounded"

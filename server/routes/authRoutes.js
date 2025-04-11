@@ -4,6 +4,8 @@ const { assignEmployerRole } = require("../middleware/authMiddleware");
 const authenticate = require("../middleware/authMiddleware").authenticate;
 const multer = require('multer');
 const userModel = require('../models/User'); // Adjust the path to your User model
+const path = require('path');
+
 
 const router = express.Router();
 

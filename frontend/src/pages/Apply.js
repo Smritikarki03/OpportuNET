@@ -6,13 +6,14 @@ const ApplyPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
-  const [coverLetter, setCoverLetter] = useState("");
-  const [resume, setResume] = useState(null);
+  const [coverLetterText, setCoverLetterText] = useState("");
+  const [coverLetterFile, setCoverLetterFile] = useState(null);
+  const [cv, setcv] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   const userRole = localStorage.getItem("userRole");
 
-  // ✅ Define fetchJob with useCallback to prevent ESLint errors
   const fetchJob = useCallback(async () => {
     try {
       const response = await axios.get(`http://localhost:5000/api/jobs/${id}`);
@@ -20,9 +21,10 @@ const ApplyPage = () => {
       setLoading(false);
     } catch (error) {
       console.error("Error fetching job:", error);
-      setLoading(false);
+      setError("Job not found. Redirecting to jobs page...");
+      setTimeout(() => navigate('/jobs'), 2000);
     }
-  }, [id]);
+  }, [id, navigate]);
 
   useEffect(() => {
     if (userRole !== "jobseeker") {
@@ -32,10 +34,16 @@ const ApplyPage = () => {
     }
 
     fetchJob();
-  }, [id, navigate, userRole, fetchJob]); // ✅ Include fetchJob in dependencies
+  }, [id, navigate, userRole, fetchJob]);
+
+  const handleGeneratecv = () => {
+    navigate("/CV");
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError(null); // Clear any previous errors
+
     try {
       const token = localStorage.getItem("auth");
       const userId = localStorage.getItem("userId");
@@ -46,23 +54,44 @@ const ApplyPage = () => {
         return;
       }
 
+      if (!coverLetterText && !coverLetterFile) {
+        setError("Please provide a cover letter (either as text or a file).");
+        return;
+      }
+
+      if (!cv) {
+        setError("CV is required.");
+        return;
+      }
+
       const data = new FormData();
       data.append("jobId", id);
       data.append("userId", userId);
-      data.append("coverLetter", coverLetter);
-      data.append("resume", resume);
+      if (coverLetterFile) {
+        data.append("coverLetterFile", coverLetterFile);
+      } else {
+        data.append("coverLetter", coverLetterText);
+      }
+      data.append("cv", cv); // ✅ Renamed here
 
-      await axios.post("http://localhost:5000/api/applications", data, {
+      // Submit the application
+      const response = await axios.post("http://localhost:5000/api/applications", data, {
         headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
       });
+      console.log('Application submission response:', response.data);
 
+      // If the submission is successful, show success message
       alert("Application submitted successfully!");
 
-      // 🔄 ✅ Fetch updated job details to update total applicants count
-      fetchJob(); // ✅ Now fetchJob is properly defined
+      // Navigate to the job description page
+      navigate(`/job/${id}`);
     } catch (error) {
-      console.error("Error submitting application:", error);
-      alert("Failed to submit application: " + (error.response?.data?.message || error.message));
+      console.error("Error submitting application:", {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      setError("Failed to submit application: " + (error.response?.data?.message || error.message));
     }
   };
 
@@ -70,8 +99,8 @@ const ApplyPage = () => {
     return <div className="text-center text-teal-700">Loading...</div>;
   }
 
-  if (!job) {
-    return <div className="text-center text-red-600">Job not found.</div>;
+  if (error && !job) {
+    return <div className="text-center text-red-600">{error}</div>;
   }
 
   return (
@@ -80,7 +109,9 @@ const ApplyPage = () => {
         <h1 className="text-4xl font-bold text-teal-700 text-center mb-8">
           Apply for {job.title}
         </h1>
-        {/* <p className="text-center text-gray-700"><strong>Total Applicants:</strong> {job.totalApplicants}</p> */}
+        {error && (
+          <div className="text-center text-red-600 mb-4">{error}</div>
+        )}
         <form
           className="bg-white p-6 rounded-lg shadow-lg max-w-2xl mx-auto"
           encType="multipart/form-data"
@@ -88,28 +119,47 @@ const ApplyPage = () => {
         >
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-2">
-              Cover Letter
+              Cover Letter (Enter text or upload a file)
             </label>
             <textarea
-              name="coverLetter"
-              value={coverLetter}
-              onChange={(e) => setCoverLetter(e.target.value)}
-              className="w-full p-2 border rounded"
-              required
+              name="coverLetterText"
+              value={coverLetterText}
+              onChange={(e) => setCoverLetterText(e.target.value)}
+              className="w-full p-2 border rounded mb-2"
+              placeholder="Write your cover letter here..."
             />
+            <input
+              type="file"
+              name="coverLetterFile"
+              accept=".pdf,.doc,.docx"
+              className="w-full p-2 border rounded"
+              onChange={(e) => setCoverLetterFile(e.target.files[0])}
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              You can either write your cover letter above or upload a file. If a file is uploaded, it will take priority.
+            </p>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 font-semibold mb-2">
-              Resume (PDF)
+              CV (PDF, Required)
             </label>
-            <input
-              type="file"
-              name="resume"
-              accept=".pdf"
-              className="w-full p-2 border rounded"
-              required
-              onChange={(e) => setResume(e.target.files[0])}
-            />
+            <div className="flex items-center space-x-4">
+              <input
+                type="file"
+                name="resume" // ✅ Updated to match the backend
+                accept=".pdf"
+                className="w-full p-2 border rounded"
+                onChange={(e) => setcv(e.target.files[0])}
+                required
+              />
+              <button
+                type="button"
+                onClick={handleGeneratecv}
+                className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600 transition duration-300"
+              >
+                Generate CV
+              </button>
+            </div>
           </div>
           <button
             type="submit"

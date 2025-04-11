@@ -81,6 +81,10 @@ exports.employerRegister = async (req, res) => {
       return res.status(400).json({ message: "Password should be at least 6 characters long" });
     }
 
+    if (password !== confirmpassword) {
+      return res.status(400).json({ message: "Passwords do not match" });
+    }
+
     const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
     if (!emailRegex.test(email)) {
       return res.status(400).json({ message: "Invalid email format" });
@@ -100,17 +104,25 @@ exports.employerRegister = async (req, res) => {
     const user = new User({
       name: fullname,
       email: email.toLowerCase(),
-      contactnumber,
+      phone: contactnumber, // Map contactnumber to phone
       password: hashedPassword,
-      companyName: companyname,
-      industry,
-      companyLocation: companylocation,
       role,
       isApproved: false,
       isProfileViewed: false,
       isCompanySetup: false, // Initialize as false for new employers
     });
     await user.save();
+    console.log(`User created with ID: ${user._id}`);
+
+    // Create a Company document
+    const company = new Company({
+      userId: user._id,
+      name: companyname,
+      industry,
+      location: companylocation,
+    });
+    await company.save();
+    console.log(`Company created for userId: ${user._id}, company: ${JSON.stringify(company)}`);
 
     const admin = await User.findOne({ role: "admin" });
     if (!admin) {

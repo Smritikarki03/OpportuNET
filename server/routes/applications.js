@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const cors = require('cors');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -26,19 +27,26 @@ const upload = multer({
 
 router.post('/', upload.single('resume'), async (req, res) => {
   try {
+    console.log('Request received:', req.body);
+    console.log('File received:', req.file);
+
+    if (!req.file) {
+      return res.status(400).json({ message: 'Resume file is required' });
+    }
+
     const { jobId, userId, coverLetter } = req.body;
     const resumePath = req.file.path;
 
     // Create a new job application
-    const newApplication = new Application({ jobId, userId, coverLetter });
+    const newApplication = new Application({ jobId, userId, coverLetter, resume: resumePath });
     await newApplication.save();
 
     // Increment total applicants in the job listing
     await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
     
-    // Get the updated job (after incrementing total applicants)
-    const updatedJob = await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
-    console.log('Updated job:', updatedJob);
+    // // Get the updated job (after incrementing total applicants)
+    // const updatedJob = await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
+    // console.log('Updated job:', updatedJob);
 
     res.status(201).json({ message: 'Application submitted successfully' });
 
