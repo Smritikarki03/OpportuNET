@@ -13,8 +13,6 @@ const app = express();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
-const User = require('./models/User'); // Your User model
-
 
 // Connect to MongoDB
 connectDB();
@@ -80,27 +78,6 @@ app.use('/api/company', companyRoutes);
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
   res.status(500).json({ message: 'Server error', error: err.message });
-});
-// Get all users
-app.get('/api/users', async (req, res) => {
-  try {
-    const users = await User.find(); // Fetch all users from DB
-    res.status(200).json(users);
-  } catch (error) {
-    res.status(500).json({ message: "Error fetching users" });
-  }
-});
-
-// Delete a user by ID
-app.delete('/api/users/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deletedUser = await User.findByIdAndDelete(id); // Delete user by ID
-    if (!deletedUser) return res.status(404).json({ message: "User not found" });
-    res.status(200).json({ message: "User deleted successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Error deleting user" });
-  }
 });
 
 const PORT = process.env.PORT || 5000;

@@ -1,9 +1,10 @@
-// src/components/CompanySetupForm.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// src/components/EditCompanyProfile.jsx
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
-const CompanySetupForm = () => {
+const EditCompanyProfile = () => {
   const navigate = useNavigate();
+  const { id } = useParams(); // Get the company ID from the URL
   const [formData, setFormData] = useState({
     name: '',
     logo: '',
@@ -15,6 +16,27 @@ const CompanySetupForm = () => {
     description: '',
   });
   const [logoFile, setLogoFile] = useState(null);
+
+  // Fetch the existing profile data
+  useEffect(() => {
+    const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
+    const profile = profiles.find((p) => p.id === id);
+    if (profile) {
+      setFormData({
+        name: profile.name || '',
+        logo: profile.logo || '',
+        industry: profile.industry || '',
+        location: profile.location || '',
+        establishedDate: profile.establishedDate || '',
+        employeeCount: profile.employeeCount || '',
+        website: profile.website || '',
+        description: profile.description || '',
+      });
+    } else {
+      alert('Company profile not found.');
+      navigate('/dashboard');
+    }
+  }, [id, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -35,38 +57,43 @@ const CompanySetupForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.name || !formData.industry || !formData.description) {
+      alert('Please fill in all required fields (Name, Industry, Description).');
+      return;
+    }
     const userId = localStorage.getItem('userId');
     if (!userId) {
       alert('User ID not found. Please log in again.');
       navigate('/login');
       return;
     }
-  
-    const newProfile = {
-      id: Date.now().toString(),
-      name: formData.name,
-      logo: formData.logo,
-      industry: formData.industry,
-      location: formData.location,
-      establishedDate: formData.establishedDate,
-      employeeCount: formData.employeeCount,
-      website: formData.website,
-      description: formData.description,
-      createdBy: userId, // Associate with the creator's userId
-      createdAt: new Date().toISOString(),
+
+    const updatedProfile = {
+      ...formData,
+      id: id,
+      createdAt: formData.createdAt || new Date().toISOString(),
+      createdBy: userId,
+      updatedAt: new Date().toISOString(),
     };
-  
+
     const existingProfiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
-    existingProfiles.push(newProfile);
-    localStorage.setItem('companyProfiles', JSON.stringify(existingProfiles));
-    localStorage.setItem('companyProfile', JSON.stringify(newProfile));
-    navigate(`/company-prof/${newProfile.id}`);
+    const updatedProfiles = existingProfiles.map((p) =>
+      p.id === id ? updatedProfile : p
+    );
+    localStorage.setItem('companyProfiles', JSON.stringify(updatedProfiles));
+    localStorage.setItem('companyProfile', JSON.stringify(updatedProfile));
+    alert('Company profile updated!');
+    navigate(`/company-prof/${id}`); // Redirect back to the profile page
+  };
+
+  const handleCancel = () => {
+    navigate(`/company-prof/${id}`); // Redirect back without saving
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 p-6">
       <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-2xl font-bold text-teal-800 mb-6">Create Company Profile</h1>
+        <h1 className="text-2xl font-bold text-teal-800 mb-6">Edit Company Profile</h1>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
             <label className="block text-sm font-medium text-gray-700">Company Name *</label>
@@ -153,12 +180,19 @@ const CompanySetupForm = () => {
               required
             />
           </div>
-          <div className="flex justify-end">
+          <div className="flex justify-end space-x-4">
             <button
               type="submit"
               className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-300"
             >
-              Create Profile
+              Save Changes
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-400 transition duration-300"
+            >
+              Cancel
             </button>
           </div>
         </form>
@@ -167,4 +201,4 @@ const CompanySetupForm = () => {
   );
 };
 
-export default CompanySetupForm;
+export default EditCompanyProfile;

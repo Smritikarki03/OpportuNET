@@ -1,10 +1,11 @@
 // src/components/CompanyProf.jsx
 import React, { useState, useEffect } from 'react';
 import { FaStar } from 'react-icons/fa';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 
 const CompanyProf = () => {
-  const { id } = useParams(); // Get ID from URL
+  const { id } = useParams();
+  const navigate = useNavigate();
   const [company, setCompany] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [currentUser, setCurrentUser] = useState('Anonymous User');
@@ -14,22 +15,42 @@ const CompanyProf = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   useEffect(() => {
+    const userId = localStorage.getItem('userId');
+    if (!userId) {
+      navigate('/login');
+      return;
+    }
+
     const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
     let selectedCompany = null;
     if (id) {
       selectedCompany = profiles.find((profile) => profile.id === id);
     } else {
-      // Fallback to the latest profile if no ID is provided
       selectedCompany = JSON.parse(localStorage.getItem('companyProfile'));
     }
+
+    // Check if the logged-in user is the creator of the profile
     if (selectedCompany) {
+      if (selectedCompany.createdBy && selectedCompany.createdBy !== userId) {
+        // Redirect to the user's own profile or setup page
+        const userProfile = profiles.find((profile) => profile.createdBy === userId);
+        if (userProfile) {
+          navigate(`/company-prof/${userProfile.id}`);
+        } else {
+          navigate('/company-setup');
+        }
+        return;
+      }
       setCompany(selectedCompany);
+    } else {
+      navigate('/dashboard');
     }
+
     const savedReviews = JSON.parse(localStorage.getItem(`companyReviews_${selectedCompany?.id}`)) || [];
     setReviews(savedReviews);
     const userName = localStorage.getItem('userName') || 'Anonymous User';
     setCurrentUser(userName);
-  }, [id]);
+  }, [id, navigate]);
 
   const handleReviewSubmit = (e) => {
     e.preventDefault();
@@ -68,19 +89,33 @@ const CompanyProf = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 font-sans">
       <div className="bg-gradient-to-r from-teal-600 to-teal-800 text-white py-16 px-6 text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-opacity-10 bg-black opacity-30"></div>
-        <img
-          src={company.logo || 'https://via.placeholder.com/150'}
-          alt={`${company.name} logo`}
-          className="w-32 h-32 object-contain rounded-full border-4 border-white shadow-lg mx-auto mb-4"
-        />
-        <h1 className="text-4xl font-bold tracking-tight">{company.name}</h1>
-        <p className="mt-2 text-lg opacity-80">{company.industry}</p>
+        <div className="absolute inset-0 bg-opacity-10 bg-black opacity-30 z-0"></div>
+        <div className="max-w-4xl mx-auto relative z-10">
+          <img
+            src={company.logo || 'https://via.placeholder.com/150'}
+            alt={`${company.name} logo`}
+            className="w-32 h-32 object-contain rounded-full border-4 border-white shadow-lg mx-auto mb-4"
+          />
+          <h1 className="text-4xl font-bold tracking-tight">{company.name}</h1>
+          <p className="mt-2 text-lg opacity-80">{company.industry}</p>
+        </div>
       </div>
 
       <div className="container mx-auto px-6 py-12">
         <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 transform transition-all duration-300 hover:shadow-2xl">
-          <h2 className="text-2xl font-semibold text-teal-800 mb-6 border-b-2 border-teal-200 pb-2">About {company.name}</h2>
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-2xl font-semibold text-teal-800 border-b-2 border-teal-200 pb-2">About {company.name}</h2>
+            <button
+              onClick={() => {
+                console.log('Edit button clicked, company ID:', company.id);
+                navigate(`/EditCompanyProfile/${company.id}`); // Fixed path to match App.jsx
+              }}
+              className="bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-teal-700 transition duration-300"
+              disabled={!company?.id}
+            >
+              Edit Company Profile
+            </button>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="flex items-start space-x-4 group">
               <svg className="w-8 h-8 text-teal-600 group-hover:text-teal-800 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">

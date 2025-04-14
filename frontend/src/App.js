@@ -37,6 +37,7 @@ import CotivitiProfile from './pages/CotivitiProfile';
 import ManageUsers from './pages/Admin/ManageUsers';
 import CompanySetupForm from './Components/CompanySetuoForm';
 import CompanyProf from './Components/CompanyProf';
+import EditCompanyProfile from './Components/EditCompanyProfile'; // Add this
 const App = () => {
   return (
       <div className="App">
@@ -77,6 +78,7 @@ const App = () => {
           <Route path="/ManageUsers" element={<ManageUsers />} />
           <Route path="/company-prof/:id?" element={<CompanyProf />} />
           <Route path="/CompanySetupForm" element={<CompanySetupForm />} /> 
+          <Route path="/EditCompanyProfile/:id" element={<EditCompanyProfile />} /> 
           
           </Routes>
       </div>

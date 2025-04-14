@@ -1,3 +1,4 @@
+// src/components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
@@ -5,37 +6,59 @@ const Header = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState("");
-  const [userRole, setUserRole] = useState(""); // Add userRole state
+  const [userRole, setUserRole] = useState("");
+  const [userId, setUserId] = useState(null);
+  const [userCompanyId, setUserCompanyId] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
       const storedUserName = localStorage.getItem("userName");
-      const storedUserRole = localStorage.getItem("userRole"); // Fetch role
+      const storedUserRole = localStorage.getItem("userRole");
+      const storedUserId = localStorage.getItem("userId");
+
       if (storedAuth && storedUserName) {
         setIsLoggedIn(true);
         setUserName(storedUserName);
-        setUserRole(storedUserRole || ""); // Set role, default to empty string if not present
+        setUserRole(storedUserRole || "");
+        setUserId(storedUserId || null);
       } else {
         setIsLoggedIn(false);
         setUserName("");
         setUserRole("");
+        setUserId(null);
+      }
+    };
+
+    const fetchCompanyData = () => {
+      const profiles = JSON.parse(localStorage.getItem("companyProfiles")) || [];
+      if (profiles.length > 0 && userId) {
+        // Fetch company created by this user (for "My Company Profile")
+        const userProfile = profiles.find(profile => profile.createdBy === userId);
+        if (userProfile) {
+          setUserCompanyId(userProfile.id);
+        }
       }
     };
 
     checkAuth();
+    fetchCompanyData();
+
     window.addEventListener("storage", checkAuth);
     return () => window.removeEventListener("storage", checkAuth);
-  }, []);
+  }, [userId]);
 
   const handleLogout = () => {
     localStorage.removeItem("auth");
     localStorage.removeItem("userName");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("userId");
     setIsLoggedIn(false);
     setUserName("");
-    setUserRole(""); // Clear role on logout
+    setUserRole("");
+    setUserId(null);
+    setUserCompanyId(null);
     setDropdownVisible(false);
     navigate("/");
     window.dispatchEvent(new Event("storage"));
@@ -82,7 +105,7 @@ const Header = () => {
                   onClick={toggleDropdown}
                   className="text-white hover:underline focus:outline-none flex items-center gap-2 cursor-pointer"
                 >
-                  <i className="fas fa-user fa-lg"></i> {/* Font Awesome person icon */}
+                  <i className="fas fa-user fa-lg"></i>
                   <span>{userName}</span>
                 </button>
                 {dropdownVisible && (
@@ -94,14 +117,13 @@ const Header = () => {
                     >
                       View Profile
                     </Link>
-                    {/* Show Company Profile only if userRole is 'employer' */}
-                    {userRole === "employer" && (
+                    {userRole === "employer" && userCompanyId && (
                       <Link
-                        to="/CompanyProfile" // Adjust this path to match your routing
+                        to={`/company-prof/${userCompanyId}`}
                         className="block px-4 py-2 hover:bg-teal-100 rounded"
                         onClick={() => setDropdownVisible(false)}
                       >
-                        Company Profile
+                        My Company Profile
                       </Link>
                     )}
                     <button

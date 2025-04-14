@@ -11,7 +11,7 @@ const HomePage = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [userId, setUserId] = useState(null);
-  const [topCompanies, setTopCompanies] = useState([]); // Dynamic top companies
+  const [topCompanies, setTopCompanies] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -42,25 +42,26 @@ const HomePage = () => {
       const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
       let dynamicCompanies = [];
       if (profiles.length > 0) {
-        // Sort by createdAt (newest first)
         const sortedProfiles = profiles.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-        // Take the most recent profile and map it to the same format
         const latestProfile = sortedProfiles[0];
+        
+        // Calculate rating based on reviews
+        const reviews = JSON.parse(localStorage.getItem(`companyReviews_${latestProfile.id}`)) || [];
+        const averageRating = reviews.length > 0
+          ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+          : 0;
+
         dynamicCompanies = [
           {
             name: latestProfile.name,
-            rating: 0, // No reviews initially, so rating is 0 (or calculate if reviews exist)
+            rating: averageRating,
             link: `/company-prof/${latestProfile.id}`,
           },
         ];
       }
 
-      // Combine dynamic and static companies (dynamic first)
       setTopCompanies([...dynamicCompanies, ...staticCompanies]);
     };
-
-    fetchNewJobs();
-    fetchTopCompanies();
 
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
@@ -79,13 +80,12 @@ const HomePage = () => {
       }
     };
 
+    fetchNewJobs();
+    fetchTopCompanies();
     checkAuth();
 
     window.addEventListener("storage", checkAuth);
-
-    return () => {
-      window.removeEventListener("storage", checkAuth);
-    };
+    return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
   const handleSearch = (e) => {
@@ -109,7 +109,7 @@ const HomePage = () => {
   };
 
   const handleCreateCompanyProfileClick = () => {
-    navigate("/CompanySetupForm"); // Updated to navigate to the correct route
+    navigate("/CompanySetupForm");
   };
 
   return (

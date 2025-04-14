@@ -54,7 +54,7 @@ const Sidebar = () => {
         </li>
         <li className="mb-4">
           <NavLink
-            to="/reports"
+            to="/reviews"
             className={({ isActive }) =>
               `flex items-center p-3 rounded-lg transition-colors ${
                 isActive ? "bg-teal-700" : "hover:bg-teal-700"
@@ -62,7 +62,7 @@ const Sidebar = () => {
             }
           >
             <FaFileAlt className="mr-3" />
-            Reports
+            Reviews
           </NavLink>
         </li>
         {/* Logout Button */}

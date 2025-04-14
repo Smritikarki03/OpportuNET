@@ -411,4 +411,4 @@ exports.editProfile = async (req, res) => {
     console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Server error' });
   }
-};
+}; 
