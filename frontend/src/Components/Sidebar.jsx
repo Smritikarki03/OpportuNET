@@ -41,7 +41,7 @@ const Sidebar = () => {
         </li>
         <li className="mb-4">
           <NavLink
-            to="/ManageJobs"
+            to="/ManageUsers"
             className={({ isActive }) =>
               `flex items-center p-3 rounded-lg transition-colors ${
                 isActive ? "bg-teal-700" : "hover:bg-teal-700"

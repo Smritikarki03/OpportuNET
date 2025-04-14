@@ -5,6 +5,8 @@ const authenticate = require("../middleware/authMiddleware").authenticate;
 const multer = require('multer');
 const userModel = require('../models/User'); // Adjust the path to your User model
 const path = require('path');
+const Job = require('../models/Job'); // Make sure to import the Job model
+
 
 
 const router = express.Router();
@@ -77,14 +79,20 @@ router.put("/editProfile", authenticate, upload.fields([
   { name: 'cv', maxCount: 1 },
 ]), async (req, res) => {
   try {
-    const { fullName, phone, skills } = req.body;
-    const userId = req.user.id; // From auth middleware
+    const { fullName, phone, skills, companyName, location, experienceLevel, education } = req.body;
+    const userId = req.user.id;
 
     const updateData = {
       name: fullName,
       phone,
       skills: skills ? skills.split(",").map(skill => skill.trim()) : [],
     };
+
+    // Add employer-specific fields if they exist
+    if (companyName) updateData.companyName = companyName;
+    if (location) updateData.location = location;
+    if (experienceLevel) updateData.experienceLevel = experienceLevel;
+    if (education) updateData.education = education;
 
     // Handle uploaded files
     if (req.files['image']) {
@@ -114,6 +122,10 @@ router.put("/editProfile", authenticate, upload.fields([
         resume: user.resume,
         skills: user.skills,
         image: user.image,
+        companyName: user.companyName,
+        location: user.location,
+        experienceLevel: user.experienceLevel,
+        education: user.education,
         isProfileViewed: user.isProfileViewed,
         appliedJobs: user.appliedJobs,
       },
@@ -121,6 +133,34 @@ router.put("/editProfile", authenticate, upload.fields([
   } catch (error) {
     console.error('Error updating profile:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
+// In your userInfo route handler
+router.get('/userInfo', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    let userData = user.toObject();
+
+    // If the user is an employer, fetch their posted jobs
+    if (user.role === 'employer') {
+      const postedJobs = await Job.find({ userId: user._id })
+        .select('title location salary status _id')
+        .sort({ createdAt: -1 });
+      
+      userData.postedJobs = postedJobs;
+    }
+
+    res.json(userData);
+  } catch (error) {
+    console.error('Error fetching user info:', error);
+    res.status(500).json({ message: 'Error fetching user information' });
   }
 });
 

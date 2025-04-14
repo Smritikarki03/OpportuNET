@@ -1,7 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/auth';
+import Header from './Header';
+import Footer from './Footer';
 
 const JobPosting = () => {
+  const [auth] = useAuth();
+  const navigate = useNavigate();
+
+  // Add debug logging
+  useEffect(() => {
+    console.log('Current auth state:', auth);
+    if (!auth?.token) {
+      navigate('/login');
+    }
+  }, [auth, navigate]);
+
   const [job, setJob] = useState({
     title: '',
     description: '',
@@ -11,7 +26,7 @@ const JobPosting = () => {
     jobType: '',
     experienceLevel: '',
     noOfPositions: 0,
-    company: '', // Start with an empty string
+    company: '',
   });
 
   const handleChange = (e) => {
@@ -20,28 +35,39 @@ const JobPosting = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!auth?.token) {
+      alert('Please log in to post a job');
+      navigate('/login');
+      return;
+    }
+
     try {
-      const response = await axios.post('http://localhost:5000/api/jobs', job, {
-        headers: {
-          'Content-Type': 'application/json',
-          // Add Authorization header if required, e.g., 'Authorization': `Bearer ${token}`
-        },
-      });
+      // Log the auth token being used
+      console.log('Using auth token:', auth.token);
+      
+      const response = await axios.post(
+        'http://localhost:5000/api/jobs',
+        job,
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${auth.token}`
+          }
+        }
+      );
+
+      console.log('Job posting response:', response.data);
       alert('Job posted successfully!');
-      setJob({
-        title: '',
-        description: '',
-        requirements: '',
-        salary: '',
-        location: '',
-        jobType: '',
-        experienceLevel: '',
-        noOfPositions: 0,
-        company: '',
-      });
+      navigate('/profile', { state: { refresh: true } });
     } catch (error) {
-      console.error('Error posting job:', error);
-      alert('Failed to post job: ' + (error.response?.data?.message || error.message));
+      console.error('Error details:', error.response || error);
+      if (error.response?.status === 401) {
+        alert('Your session has expired. Please log in again.');
+        navigate('/login');
+      } else {
+        alert('Failed to post job: ' + (error.response?.data?.message || error.message));
+      }
     }
   };
 
@@ -212,7 +238,7 @@ const styles = {
   },
   button: {
     padding: '10px',
-    backgroundColor: '#333',
+    backgroundColor: 'teal',
     color: '#fff',
     border: 'none',
     borderRadius: '4px',

@@ -1,8 +1,8 @@
+// src/components/HomePage.jsx
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
-// import CompanySetupModal from "../Components/CompanySetupModal";
 import axios from 'axios';
 
 const HomePage = () => {
@@ -10,8 +10,8 @@ const HomePage = () => {
   const [newJobs, setNewJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
-  // const [showCompanySetupModal, setShowCompanySetupModal] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [topCompanies, setTopCompanies] = useState([]); // Dynamic top companies
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -29,24 +29,49 @@ const HomePage = () => {
       }
     };
 
+    const fetchTopCompanies = () => {
+      // Hardcoded companies
+      const staticCompanies = [
+        { name: "CV Raman", rating: 4.8, link: "/CVRamanProfile" },
+        { name: "LeapFrog Private Limited", rating: 4.5, link: "/LeapFrogProfile" },
+        { name: "Data Works Private", rating: 4.7, link: "/DataWorksProfile" },
+        { name: "Cotiviti", rating: 4.6, link: "/CotivitiProfile" },
+      ];
+
+      // Fetch dynamic companies from localStorage
+      const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
+      let dynamicCompanies = [];
+      if (profiles.length > 0) {
+        // Sort by createdAt (newest first)
+        const sortedProfiles = profiles.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        // Take the most recent profile and map it to the same format
+        const latestProfile = sortedProfiles[0];
+        dynamicCompanies = [
+          {
+            name: latestProfile.name,
+            rating: 0, // No reviews initially, so rating is 0 (or calculate if reviews exist)
+            link: `/company-prof/${latestProfile.id}`,
+          },
+        ];
+      }
+
+      // Combine dynamic and static companies (dynamic first)
+      setTopCompanies([...dynamicCompanies, ...staticCompanies]);
+    };
+
     fetchNewJobs();
+    fetchTopCompanies();
 
     const checkAuth = () => {
       const storedAuth = localStorage.getItem("auth");
       const storedUserRole = localStorage.getItem("userRole");
       const storedUserId = localStorage.getItem("userId");
-      const storedIsCompanySetup = localStorage.getItem("isCompanySetup");
+      const storedUserName = localStorage.getItem("userName");
 
       if (storedAuth) {
         setIsLoggedIn(true);
         setUserRole(storedUserRole || "");
         setUserId(storedUserId || null);
-
-        // if (storedUserRole === "employer" && storedUserId) {
-        //   if (storedIsCompanySetup === "false") {
-        //     setShowCompanySetupModal(true);
-        //   }
-        // }
       } else {
         setIsLoggedIn(false);
         setUserRole("");
@@ -79,11 +104,13 @@ const HomePage = () => {
     navigate("/JobPost");
   };
 
-  const topCompanies = [
-    { name: "TechCorp", rating: 4.8 },
-    { name: "InnovateInc", rating: 4.5 },
-    { name: "DataWorks", rating: 4.7 },
-  ];
+  const handleSetupCompanyClick = () => {
+    navigate("/CompanySU");
+  };
+
+  const handleCreateCompanyProfileClick = () => {
+    navigate("/CompanySetupForm"); // Updated to navigate to the correct route
+  };
 
   return (
     <div className="min-h-screen bg-teal-50 text-teal-900">
@@ -110,29 +137,46 @@ const HomePage = () => {
         </div>
 
         {isLoggedIn && userRole === "employer" && (
-          <div className="mt-12">
+          <div className="mt-12 flex justify-center gap-4">
             <button
               onClick={handlePostJobClick}
               className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
             >
               Post a Job
             </button>
+            <button
+              onClick={handleSetupCompanyClick}
+              className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
+            >
+              Setup Company
+            </button>
+            <button
+              onClick={handleCreateCompanyProfileClick}
+              className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
+            >
+              Create Company Profile
+            </button>
           </div>
         )}
 
         <div className="mt-12">
-          <h2 className="text-3xl font-semibold text-teal-800">Top Companies</h2>
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-            {topCompanies.map((company, index) => (
-              <div
-                key={index}
-                className="bg-white text-teal-700 p-6 rounded-lg shadow-lg hover:shadow-2xl transition transform hover:scale-105"
-              >
-                <h3 className="text-xl font-bold">{company.name}</h3>
-                <p className="mt-2 text-gray-600">Rating: {company.rating} / 5</p>
-              </div>
-            ))}
-          </div>
+          <h2 className="text-3xl font-semibold text-teal-800">Companies</h2>
+          {topCompanies.length === 0 ? (
+            <p className="mt-6 text-lg text-teal-700">No companies available yet.</p>
+          ) : (
+            <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              {topCompanies.map((company, index) => (
+                <Link to={company.link} key={index}>
+                  <div
+                    className="bg-white text-teal-700 p-6 rounded-lg shadow-lg hover:shadow-2xl transition transform hover:scale-105"
+                  >
+                    <h3 className="text-xl font-bold">{company.name}</h3>
+                    <p className="mt-2 text-gray-600">Rating: {company.rating} / 5</p>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="mt-12">
@@ -180,16 +224,6 @@ const HomePage = () => {
           Generate a CV
         </button>
       </div>
-
-      {/* {showCompanySetupModal && (
-        <CompanySetupModal
-          userId={userId}
-          onClose={() => {
-            setShowCompanySetupModal(false);
-            localStorage.setItem("isCompanySetup", "true");
-          }}
-        />
-      )} */}
 
       <Footer />
     </div>

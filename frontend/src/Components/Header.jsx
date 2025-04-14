@@ -97,7 +97,7 @@ const Header = () => {
                     {/* Show Company Profile only if userRole is 'employer' */}
                     {userRole === "employer" && (
                       <Link
-                        to="/CompanySU" // Adjust this path to match your routing
+                        to="/CompanyProfile" // Adjust this path to match your routing
                         className="block px-4 py-2 hover:bg-teal-100 rounded"
                         onClick={() => setDropdownVisible(false)}
                       >

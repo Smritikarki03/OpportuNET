@@ -13,7 +13,7 @@ import EmployerProfile from './pages/Employer/EmployerProfile';
 import EmployerProfilePage from './pages/Employer/ProfileEm';
 import RatingsAndReviews from './pages/Ratings';
 import EditProfile from './pages/JobSeeker/EditProfilePage';
-import EditEmployerProfile from './pages/Employer/CompanyProfile';
+// import EditEmployerProfile from './pages/Employer/CompanyProfile';
 import EditEMProfile from './pages/Employer/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
 import EmployerDashboard from './pages/Employer/EmployerDB';
@@ -24,19 +24,25 @@ import ContactPage from './pages/Contact';
 import CV from './pages/CV';
 import AdminNotifications from './Components/AdminNotifications';
 import JobPosting from './Components/JobPost';
-import CompanyProfile from './pages/Employer/CompanyProfile'; 
+import CompanyProfile from './Components/CompanyProfile'; 
 // import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
 import JobDescription from './pages/JobDescription';
 import ApplyPage from './pages/Apply';
 import ManageJobs from './pages/Admin/ManageJob';
-import CompanySU from './pages/Employer/CompanySU';
-
+import CompanySU from './Components/CompanySU';
+import CVRamanProfile from './pages/CVRamanProfile';
+import LeapFrogProfile from './pages/LepFrogProfile';
+import DataWorksProfile from './pages/DataWorksProfile';
+import CotivitiProfile from './pages/CotivitiProfile';
+import ManageUsers from './pages/Admin/ManageUsers';
+import CompanySetupForm from './Components/CompanySetuoForm';
+import CompanyProf from './Components/CompanyProf';
 const App = () => {
   return (
       <div className="App">
         <Toaster />
         <Routes>
-        <Route path="/" element={<HomePage />} /> {/* HomePage set to root */}
+          <Route path="/" element={<HomePage />} /> {/* HomePage set to root */}
           <Route path="/Login" element={<Login />} />
           <Route path="/Signup" element={<Signup />} />
           <Route path="/employerSignup" element={<SignUpEmployer/>} />
@@ -48,7 +54,7 @@ const App = () => {
           <Route path="/ProfileEM" element={<EmployerProfilePage/>} />
           <Route path="/Ratings" element={<RatingsAndReviews/>} />
           <Route path="/EditProfilePage" element={<EditProfile/>} />
-          <Route path="/EditEP" element={<EditEmployerProfile/>} />
+          {/* <Route path="/EditEP" element={<EditEmployerProfile/>} /> */}
           <Route path="/EMEdit" element={<EditEMProfile/>} />
           <Route path="/reset-password" element={<ResetPassword/>} />
           <Route path="/EmployerDB" element={<EmployerDashboard/>} />
@@ -63,28 +69,16 @@ const App = () => {
           <Route path="/description/:id" element={<JobDescription />} />
           <Route path="/apply/:id" element={<ApplyPage />} />
           <Route path="/ManageJob" element={<ManageJobs />} />
-          <Route path="/CompanyProfile" element={<CompanyProfile />} />
+          <Route path="/CompanyProfile/:id" element={<CompanyProfile />} />
+          <Route path="CVRamanProfile" element={<CVRamanProfile />} />
+          <Route path="LeapFrogProfile" element={<LeapFrogProfile/>} />
+          <Route path="DataWorksProfile" element={<DataWorksProfile/>} />
+          <Route path="CotivitiProfile" element={<CotivitiProfile/>} />
+          <Route path="/ManageUsers" element={<ManageUsers />} />
+          <Route path="/company-prof/:id?" element={<CompanyProf />} />
+          <Route path="/CompanySetupForm" element={<CompanySetupForm />} /> 
           
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        </Routes>
+          </Routes>
       </div>
   );
 };

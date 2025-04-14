@@ -121,9 +121,38 @@ const markNotificationAsRead = async (req, res) => {
   }
 };
 
+// Add the missing getUserStats function
+const getUserStats = async (req, res) => {
+  try {
+    // Get counts of different user types
+    const jobSeekersCount = await User.countDocuments({ role: 'jobseeker' });
+    const employersCount = await User.countDocuments({ role: 'employer' });
+    const approvedEmployersCount = await User.countDocuments({ role: 'employer', isApproved: true });
+    const pendingEmployersCount = await User.countDocuments({ role: 'employer', isApproved: false });
+    
+    // Get notification counts
+    const unreadNotificationsCount = await Notification.countDocuments({ 
+      adminId: req.user.id, 
+      read: false 
+    });
+    
+    res.status(200).json({
+      jobSeekersCount,
+      employersCount,
+      approvedEmployersCount,
+      pendingEmployersCount,
+      unreadNotificationsCount
+    });
+  } catch (error) {
+    console.error("Error fetching user stats:", error);
+    res.status(500).json({ message: "Error fetching user statistics" });
+  }
+};
+
 // Explicitly export all functions
 module.exports = {
   adminApproveRejectEmployer,
   getNotifications,
   markNotificationAsRead,
+  getUserStats
 };

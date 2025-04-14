@@ -25,13 +25,13 @@ const AdminDashboard = () => {
         setLoading(true);
 
         // Fetch job seekers
-        const jobSeekersRes = await fetch("http://localhost:3001/jobseekers");
+        const jobSeekersRes = await fetch("http://localhost:3000/jobseekers");
         if (!jobSeekersRes.ok) throw new Error("Failed to fetch job seekers");
         const jobSeekersData = await jobSeekersRes.json();
         setJobSeekers(jobSeekersData);
 
         // Fetch employees
-        const employeesRes = await fetch("http://localhost:3001/employees");
+        const employeesRes = await fetch("http://localhost:3000/employees");
         if (!employeesRes.ok) throw new Error("Failed to fetch employees");
         const employeesData = await employeesRes.json();
         setEmployees(employeesData);

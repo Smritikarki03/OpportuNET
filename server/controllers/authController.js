@@ -5,6 +5,7 @@ const nodemailer = require("nodemailer");
 const crypto = require("crypto");
 require("dotenv").config();
 const Notification = require("../models/Notification");
+const Job = require("../models/Job");
 
 exports.register = async (req, res) => {
   try {
@@ -305,9 +306,13 @@ exports.userInfo = async (req, res) => {
       resume: user.resume,
       skills: user.skills,
       image: user.image,
-      bio: user.bio, // Include bio field
+      bio: user.bio,
       isProfileViewed: user.isProfileViewed,
       appliedJobs: user.appliedJobs,
+      companyName: user.companyName,
+      location: user.location,
+      experienceLevel: user.experienceLevel,
+      education: user.education
     };
     console.log("User info response:", userData);
 
@@ -349,16 +354,20 @@ exports.editProfile = async (req, res) => {
     console.log("Request body:", req.body);
     console.log("Request files:", req.files);
 
-    const { fullName, phone, skills, bio } = req.body; // Extract bio
-    const userId = req.user.id;
-
     const updateData = {
-      name: fullName,
-      phone,
-      skills: skills ? skills.split(",").map(skill => skill.trim()) : [],
-      bio, // Add bio to updateData
+      name: req.body.fullName,
+      phone: req.body.phone,
+      skills: req.body.skills ? req.body.skills.split(",").map(skill => skill.trim()) : [],
     };
 
+    // Add employer-specific fields if they exist
+    if (req.body.companyName) updateData.companyName = req.body.companyName;
+    if (req.body.location) updateData.location = req.body.location;
+    if (req.body.experienceLevel) updateData.experienceLevel = req.body.experienceLevel;
+    if (req.body.education) updateData.education = req.body.education;
+    if (req.body.bio) updateData.bio = req.body.bio;
+
+    // Handle file uploads
     if (req.files && req.files['image']) {
       updateData.image = `/uploads/${req.files['image'][0].filename}`;
     }
@@ -367,7 +376,7 @@ exports.editProfile = async (req, res) => {
     }
 
     const user = await User.findByIdAndUpdate(
-      userId,
+      req.user.id,
       updateData,
       { new: true }
     );
@@ -378,6 +387,7 @@ exports.editProfile = async (req, res) => {
 
     console.log("Updated user in database:", user);
 
+    // Send back all user fields in response
     res.json({
       message: 'Profile updated successfully',
       user: {
@@ -388,9 +398,13 @@ exports.editProfile = async (req, res) => {
         resume: user.resume,
         skills: user.skills,
         image: user.image,
-        bio: user.bio, // Include bio in response
+        bio: user.bio,
         isProfileViewed: user.isProfileViewed,
         appliedJobs: user.appliedJobs,
+        companyName: user.companyName,
+        location: user.location,
+        experienceLevel: user.experienceLevel,
+        education: user.education
       },
     });
   } catch (error) {

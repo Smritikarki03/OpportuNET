@@ -12,7 +12,7 @@ const notificationSchema = new mongoose.Schema({
 notificationSchema.methods.populateUserInfo = function() {
   return this.populate([
     { path: 'adminId', select: 'name email phone' },
-    { path: 'employerId', select: 'name email phone companyName industry ' }
+    { path: 'employerId', select: 'name email phone companyName industry' }
   ]);
 };
 

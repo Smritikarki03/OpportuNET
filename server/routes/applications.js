@@ -3,6 +3,7 @@ const router = express.Router();
 const multer = require('multer');
 const Application = require('../models/Application');
 const Job = require('../models/Job');
+const path = require('path');
 const cors = require('cors');
 
 const storage = multer.diskStorage({
@@ -35,18 +36,23 @@ router.post('/', upload.single('resume'), async (req, res) => {
     }
 
     const { jobId, userId, coverLetter } = req.body;
-    const resumePath = req.file.path;
+    
+    if (!jobId || !userId || !coverLetter) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
 
-    // Create a new job application
-    const newApplication = new Application({ jobId, userId, coverLetter, resume: resumePath });
+    // Create a new job application with the resume path
+    const newApplication = new Application({
+      jobId,
+      userId,
+      coverLetter,
+      resume: req.file.path // Save the file path in the resume field
+    });
+
     await newApplication.save();
 
     // Increment total applicants in the job listing
     await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
-    
-    // // Get the updated job (after incrementing total applicants)
-    // const updatedJob = await Job.findByIdAndUpdate(jobId, { $inc: { totalApplicants: 1 } }, { new: true });
-    // console.log('Updated job:', updatedJob);
 
     res.status(201).json({ message: 'Application submitted successfully' });
 

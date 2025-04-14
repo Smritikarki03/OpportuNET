@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const userModel = require('../models/User');
 
 // Middleware to authenticate user
-const authenticate = (req, res, next) => {
+const authenticate = async (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');
 
   if (!token) {
@@ -10,11 +10,20 @@ const authenticate = (req, res, next) => {
   }
 
   try {
+    // Verify the token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     if (!decoded.id) {
       return res.status(400).json({ message: 'Invalid token: Missing user ID.' });
     }
-    req.user = { id: decoded.id }; // Attach minimal user info
+
+    // Check if the user exists in the database
+    const user = await userModel.findById(decoded.id);
+    if (!user) {
+      return res.status(404).json({ message: 'User ID not found. Please log in again.' });
+    }
+
+    // Attach user info to the request
+    req.user = { id: decoded.id, role: user.role }; // Include role for role-based checks
     next();
   } catch (error) {
     console.error('Authentication error:', error.message);

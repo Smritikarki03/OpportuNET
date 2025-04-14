@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 
@@ -12,25 +12,23 @@ const EditProfilePage = () => {
     name: user.name || "",
     phone: user.phone || "",
     skills: user.skills?.join(", ") || "",
-    bio: user.bio || "", // Add bio field
+    bio: user.bio || "",
   });
+
   const [imageFile, setImageFile] = useState(null);
   const [cvFile, setCvFile] = useState(null);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const handleChange = (e) => {
-    console.log(`Updating ${e.target.name}:`, e.target.value);
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleFileChange = (e) => {
     const { name, files } = e.target;
     if (name === "image") {
-      console.log("Image file selected:", files[0]);
       setImageFile(files[0]);
     } else if (name === "cv") {
-      console.log("CV file selected:", files[0]);
       setCvFile(files[0]);
     }
   };
@@ -47,20 +45,18 @@ const EditProfilePage = () => {
         setIsLoading(false);
         return;
       }
-      console.log("FormData state before submission:", formData); // Add this log
 
       const formDataToSend = new FormData();
       formDataToSend.append("fullName", formData.name);
       formDataToSend.append("phone", formData.phone);
       formDataToSend.append("skills", formData.skills);
-      formDataToSend.append("bio", formData.bio); // Add bio to FormData
+
+      if (user.role !== "employer") {
+        formDataToSend.append("bio", formData.bio);
+      }
+
       if (imageFile) formDataToSend.append("image", imageFile);
       if (cvFile) formDataToSend.append("cv", cvFile);
-
-      // Log FormData contents
-      for (let [key, value] of formDataToSend.entries()) {
-        console.log(`${key}:`, value);
-      }
 
       const response = await fetch("http://localhost:5000/api/auth/editProfile", {
         method: "PUT",
@@ -71,19 +67,23 @@ const EditProfilePage = () => {
       });
 
       const result = await response.json();
-      console.log("Response from server:", result);
 
       if (response.ok) {
-        // Update localStorage with the new user data
         const updatedUser = {
           ...user,
           name: formData.name,
           phone: formData.phone,
-          skills: formData.skills ? formData.skills.split(",").map((skill) => skill.trim()) : [],
-          resume: result.user.resume || user.resume,
+          skills: formData.skills
+            ? formData.skills.split(",").map((skill) => skill.trim())
+            : [],
           image: result.user.image || user.image,
-          bio: result.user.bio || formData.bio, // Include bio in updatedUser
+          resume: result.user.resume || user.resume,
         };
+
+        if (user.role !== "employer") {
+          updatedUser.bio = formData.bio;
+        }
+
         localStorage.setItem("user", JSON.stringify(updatedUser));
         navigate("/profile", { state: { updateMessage: "Profile updated successfully" } });
       } else {
@@ -136,19 +136,7 @@ const EditProfilePage = () => {
               value={formData.skills}
               onChange={handleChange}
               className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
-              placeholder="e.g., JavaScript, React, Node.js"
-            />
-          </div>
-
-          <div className="mb-4">
-            <label className="block text-gray-700 font-semibold mb-2">Bio</label>
-            <textarea
-              name="bio"
-              value={formData.bio}
-              onChange={handleChange}
-              className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-600"
-              placeholder="Tell us about yourself..."
-              rows="4"
+              placeholder="e.g., React, Node.js"
             />
           </div>
 
@@ -163,7 +151,15 @@ const EditProfilePage = () => {
             />
             {user.image && (
               <p className="mt-2 text-teal-600">
-                Current image: <a href={`http://localhost:5000${user.image}`} target="_blank" rel="noopener noreferrer">View</a>
+                Current image:{" "}
+                <a
+                  href={`http://localhost:5000${user.image}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View
+                </a>
               </p>
             )}
           </div>
@@ -179,27 +175,26 @@ const EditProfilePage = () => {
             />
             {user.resume && (
               <p className="mt-2 text-teal-600">
-                Current resume: <a href={`http://localhost:5000${user.resume}`} target="_blank" rel="noopener noreferrer">View</a>
+                Current resume:{" "}
+                <a
+                  href={`http://localhost:5000${user.resume}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline"
+                >
+                  View
+                </a>
               </p>
             )}
           </div>
 
-          <div className="flex justify-end space-x-4">
-            <button
-              type="button"
-              onClick={() => navigate("/profile")}
-              className="bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
-            >
-              {isLoading ? "Saving..." : "Save Changes"}
-            </button>
-          </div>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="w-full bg-teal-600 text-white py-2 rounded-lg hover:bg-teal-700 transition duration-200"
+          >
+            {isLoading ? "Updating..." : "Update Profile"}
+          </button>
         </form>
       </div>
     </div>
