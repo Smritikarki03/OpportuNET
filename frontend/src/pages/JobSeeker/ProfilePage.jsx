@@ -38,15 +38,20 @@ const ProfilePage = () => {
       console.log("User data from server:", result);
 
       if (response.ok) {
-        setUser(result);
-        localStorage.setItem("user", JSON.stringify(result));
-        console.log("User state set:", result);
+        // Include ID from auth context
+        const userData = {
+          ...result,
+          _id: auth?.user?.id || auth?.user?._id || result._id || result.id
+        };
+        console.log("Processed user data with auth ID:", userData);
+        setUser(userData);
+        localStorage.setItem("user", JSON.stringify(userData));
 
         let isProfileIncomplete = false;
-        if (result.role === "jobseeker") {
-          isProfileIncomplete = !result.name || !result.skills?.length || !result.resume;
-        } else if (result.role === "employer") {
-          isProfileIncomplete = !result.name || !result.skills?.length || !result.resume;
+        if (userData.role === "jobseeker") {
+          isProfileIncomplete = !userData.name || !userData.skills?.length || !userData.resume;
+        } else if (userData.role === "employer") {
+          isProfileIncomplete = !userData.name || !userData.skills?.length || !userData.resume;
         }
         setShowPopup(isProfileIncomplete);
       } else {
@@ -57,23 +62,51 @@ const ProfilePage = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [auth.token]);
+  }, [auth]);
 
   const fetchPostedJobs = useCallback(async () => {
-    if (!user || !user._id) return; // Wait until user is loaded
+    console.log("Attempting to fetch posted jobs...");
+    console.log("Current user:", user);
+    console.log("Auth context:", auth);
+    
+    // Get the user ID from auth context
+    const userId = auth?.user?.id || auth?.user?._id;
+    console.log("User ID from auth:", userId);
+    
+    if (!user || !userId) {
+      console.log("No user or user ID available, skipping job fetch");
+      return;
+    }
+    
     try {
-      const response = await axios.get(`http://localhost:5000/api/jobs?postedBy=${user._id}`, {
+      console.log("Making API request to fetch jobs for user ID:", userId);
+      const response = await axios.get('http://localhost:5000/api/jobs', {
         headers: {
           Authorization: `Bearer ${auth.token}`,
+          'Content-Type': 'application/json'
         },
+        params: {
+          userId: userId
+        }
       });
-      setPostedJobs(response.data);
-      console.log("Fetched posted jobs:", response.data);
+      
+      console.log("API Response:", response);
+      console.log("Fetched jobs data:", response.data);
+      
+      if (Array.isArray(response.data)) {
+        setPostedJobs(response.data);
+        console.log("Successfully set posted jobs:", response.data.length, "jobs");
+      } else {
+        console.error("Unexpected response format:", response.data);
+        setPostedJobs([]);
+      }
     } catch (error) {
       console.error("Error fetching posted jobs:", error);
+      console.error("Error details:", error.response?.data);
       setError("Failed to fetch posted jobs: " + (error.response?.data?.message || error.message));
+      setPostedJobs([]);
     }
-  }, [user, auth.token]);
+  }, [user, auth]);
 
   useEffect(() => {
     if (location.state?.refresh) {
@@ -81,15 +114,17 @@ const ProfilePage = () => {
       // Clear the refresh flag
       navigate(location.pathname, { replace: true });
     } else if (location.state?.updatedUser) {
-      setUser(location.state.updatedUser);
+      const updatedUser = location.state.updatedUser;
+      console.log("Setting user from location state:", updatedUser);
+      console.log("User ID from location state:", updatedUser._id);
+      setUser(updatedUser);
       setIsLoading(false);
-      localStorage.setItem("user", JSON.stringify(location.state.updatedUser));
-      const result = location.state.updatedUser;
+      localStorage.setItem("user", JSON.stringify(updatedUser));
       let isProfileIncomplete = false;
-      if (result.role === "jobseeker") {
-        isProfileIncomplete = !result.name || !result.skills?.length || !result.resume;
-      } else if (result.role === "employer") {
-        isProfileIncomplete = !result.name || !result.skills?.length || !result.resume;
+      if (updatedUser.role === "jobseeker") {
+        isProfileIncomplete = !updatedUser.name || !updatedUser.skills?.length || !updatedUser.resume;
+      } else if (updatedUser.role === "employer") {
+        isProfileIncomplete = !updatedUser.name || !updatedUser.skills?.length || !updatedUser.resume;
       }
       setShowPopup(isProfileIncomplete);
     } else {
@@ -97,12 +132,27 @@ const ProfilePage = () => {
     }
   }, [fetchUserData, location.state, navigate, location.pathname]);
 
-  // Separate useEffect for fetching posted jobs after user is loaded
+  // Update the condition in the useEffect
   useEffect(() => {
-    if (user && user.role === "employer") {
+    console.log("User state changed. Current user:", user);
+    console.log("User role:", user?.role);
+    console.log("Auth context in effect:", auth);
+    
+    const userId = auth?.user?.id || auth?.user?._id;
+    console.log("User ID from auth in effect:", userId);
+    
+    if (user && user.role === "employer" && userId) {
+      console.log("Conditions met to fetch posted jobs");
       fetchPostedJobs();
+    } else {
+      console.log("Conditions not met to fetch jobs:", {
+        hasUser: !!user,
+        isEmployer: user?.role === "employer",
+        hasId: !!userId,
+        authUser: auth?.user
+      });
     }
-  }, [user, fetchPostedJobs]);
+  }, [user, fetchPostedJobs, auth]);
 
   const closePopup = () => setShowPopup(false);
 
@@ -152,23 +202,28 @@ const ProfilePage = () => {
     }
   };
 
-  const handleToggleJobStatus = async (jobId) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/jobs/${jobId}/toggle-status`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-      });
+  const handleDeleteJob = async (jobId) => {
+    if (window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+      try {
+        const response = await fetch(`http://localhost:5000/api/jobs/${jobId}`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${auth.token}`,
+          },
+        });
 
-      if (response.ok) {
-        fetchPostedJobs();
-      } else {
-        console.error("Failed to toggle job status");
+        if (response.ok) {
+          // Remove the deleted job from the state
+          setPostedJobs(postedJobs.filter(job => job._id !== jobId));
+        } else {
+          console.error('Failed to delete job');
+          setError('Failed to delete job');
+        }
+      } catch (error) {
+        console.error('Error deleting job:', error);
+        setError('Error deleting job');
       }
-    } catch (error) {
-      console.error("Error toggling job status:", error);
     }
   };
 
@@ -278,72 +333,159 @@ const ProfilePage = () => {
       </div>
 
       {user.role === "employer" && (
-        <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold text-teal-700">Posted Jobs</h2>
-            <button
-              onClick={() => navigate("/JobPost")}
-              className="bg-teal-600 text-white px-4 py-2 rounded-lg hover:bg-teal-700 transition"
-            >
-              + Post New Job
-            </button>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="text-gray-600 border-b">
-                  <th className="py-2 px-4">Title</th>
-                  <th className="py-2 px-4">Location</th>
-                  <th className="py-2 px-4">Salary</th>
-                  <th className="py-2 px-4">Status</th>
-                  <th className="py-2 px-4">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {postedJobs.length > 0 ? (
-                  postedJobs.map((job, index) => (
-                    <tr key={index} className="border-b hover:bg-gray-50">
-                      <td className="py-2 px-4">{job.title}</td>
-                      <td className="py-2 px-4">{job.location}</td>
-                      <td className="py-2 px-4">{job.salary}</td>
-                      <td className="py-2 px-4">
-                        <span
-                          className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                            job.status === "Active"
-                              ? "bg-green-200 text-green-800"
-                              : "bg-red-200 text-red-800"
-                          }`}
-                        >
-                          {job.status || "Active"}
-                        </span>
-                      </td>
-                      <td className="py-2 px-4">
-                        <button
-                          onClick={() => navigate(`/edit-job/${job._id}`)}
-                          className="text-teal-600 hover:text-teal-800 mr-2"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleToggleJobStatus(job._id)}
-                          className="text-red-600 hover:text-red-800"
-                        >
-                          {job.status === "Active" ? "Deactivate" : "Activate"}
-                        </button>
-                      </td>
+        <>
+          {/* Posted Jobs Section */}
+          <div className="max-w-4xl mx-auto mt-8 space-y-6">
+            {/* Statistics Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-teal-100 text-teal-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Total Jobs</p>
+                    <p className="text-2xl font-semibold text-gray-900">{postedJobs.length}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-green-100 text-green-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+                    <p className="text-2xl font-semibold text-green-600">
+                      {postedJobs.filter(job => job.status === 'Active').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center">
+                  <div className="p-3 rounded-full bg-red-100 text-red-600">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Inactive Jobs</p>
+                    <p className="text-2xl font-semibold text-red-600">
+                      {postedJobs.filter(job => job.status === 'Inactive').length}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Posted Jobs Table */}
+            <div className="bg-white shadow-lg rounded-lg overflow-hidden">
+              <div className="p-6 border-b border-gray-200">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-semibold text-teal-700">Posted Jobs</h2>
+                  <button
+                    onClick={() => navigate("/JobPost")}
+                    className="inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors duration-200 shadow-sm hover:shadow-md"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                    </svg>
+                    Post New Job
+                  </button>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="py-4 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                      <th className="py-4 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                      <th className="py-4 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Salary</th>
+                      <th className="py-4 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="py-4 px-6 text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="py-4 px-4 text-center text-gray-500">
-                      No jobs posted yet. Click "Post New Job" to get started!
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {postedJobs.length > 0 ? (
+                      postedJobs.map((job) => (
+                        <tr key={job._id} className="hover:bg-gray-50 transition-colors duration-200">
+                          <td className="py-4 px-6">
+                            <div className="text-sm font-medium text-gray-900">{job.title}</div>
+                          </td>
+                          <td className="py-4 px-6 text-sm text-gray-500">{job.location}</td>
+                          <td className="py-4 px-6 text-sm text-gray-500">{job.salary}</td>
+                          <td className="py-4 px-6">
+                            <span
+                              className={`inline-flex px-3 py-1 text-xs font-medium rounded-full ${
+                                job.status === "Active"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
+                            >
+                              {job.status || "Active"}
+                            </span>
+                          </td>
+                          <td className="py-4 px-6">
+                            <div className="flex items-center space-x-4">
+                              <button
+                                onClick={() => navigate(`/description/${job._id}`)}
+                                className="text-teal-600 hover:text-teal-900 font-medium text-sm"
+                              >
+                                View
+                              </button>
+                              <button
+                                onClick={() => navigate(`/jobs/edit/${job._id}`)}
+                                className="text-blue-600 hover:text-blue-900 font-medium text-sm"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteJob(job._id)}
+                                className="text-red-600 hover:text-red-900 font-medium text-sm"
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="5" className="py-8 px-6 text-center">
+                          <div className="text-center">
+                            <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1" 
+                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                            </svg>
+                            <h3 className="mt-4 text-sm font-medium text-gray-900">No jobs posted yet</h3>
+                            <p className="mt-1 text-sm text-gray-500">Get started by creating a new job posting</p>
+                            <div className="mt-6">
+                              <button
+                                onClick={() => navigate("/JobPost")}
+                                className="inline-flex items-center px-4 py-2 bg-teal-600 text-white text-sm font-medium rounded-lg hover:bg-teal-700 transition-colors duration-200"
+                              >
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+                                </svg>
+                                Post New Job
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
-        </div>
+        </>
       )}
 
       <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">

@@ -38,6 +38,8 @@ import ManageUsers from './pages/Admin/ManageUsers';
 import CompanySetupForm from './Components/CompanySetuoForm';
 import CompanyProf from './Components/CompanyProf';
 import EditCompanyProfile from './Components/EditCompanyProfile'; // Add this
+import EditJob from './pages/Employer/EditJob';
+
 const App = () => {
   return (
       <div className="App">
@@ -51,7 +53,7 @@ const App = () => {
           <Route path="/selectSignup" element={<SignUpSelectionPage />} />
           <Route path="/Forgotpw" element={<ForgotPassword/>} />
           <Route path="/EmployerProfile" element={<EmployerProfile/>} />
-          <Route path="/profile" element={<ProfilePage/>} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route path="/ProfileEM" element={<EmployerProfilePage/>} />
           <Route path="/Ratings" element={<RatingsAndReviews/>} />
           <Route path="/EditProfilePage" element={<EditProfile/>} />
@@ -79,8 +81,8 @@ const App = () => {
           <Route path="/company-prof/:id?" element={<CompanyProf />} />
           <Route path="/CompanySetupForm" element={<CompanySetupForm />} /> 
           <Route path="/EditCompanyProfile/:id" element={<EditCompanyProfile />} /> 
-          
-          </Routes>
+          <Route path="/jobs/edit/:id" element={<EditJob />} />
+        </Routes>
       </div>
   );
 };

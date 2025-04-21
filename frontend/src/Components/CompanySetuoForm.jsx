@@ -35,32 +35,33 @@ const CompanySetupForm = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const userId = localStorage.getItem('userId');
+    if (!formData.name || !formData.industry || !formData.description) {
+      alert('Please fill in all required fields (Name, Industry, Description).');
+      return;
+    }
+    const userId = localStorage.getItem('userId'); // Get the logged-in user's ID
     if (!userId) {
       alert('User ID not found. Please log in again.');
       navigate('/login');
       return;
     }
-  
+    // Add createdAt timestamp, unique ID, and createdBy
     const newProfile = {
+      ...formData,
       id: Date.now().toString(),
-      name: formData.name,
-      logo: formData.logo,
-      industry: formData.industry,
-      location: formData.location,
-      establishedDate: formData.establishedDate,
-      employeeCount: formData.employeeCount,
-      website: formData.website,
-      description: formData.description,
-      createdBy: userId, // Associate with the creator's userId
       createdAt: new Date().toISOString(),
+      createdBy: userId, // Add createdBy field
     };
-  
+    // Fetch existing profiles or initialize an empty array
     const existingProfiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
-    existingProfiles.push(newProfile);
-    localStorage.setItem('companyProfiles', JSON.stringify(existingProfiles));
+    // Add new profile to the array
+    const updatedProfiles = [newProfile, ...existingProfiles];
+    // Save updated profiles to localStorage
+    localStorage.setItem('companyProfiles', JSON.stringify(updatedProfiles));
+    // Save the latest profile for CompanyProf (optional, for single profile view)
     localStorage.setItem('companyProfile', JSON.stringify(newProfile));
-    navigate(`/company-prof/${newProfile.id}`);
+    alert('Company profile created!');
+    navigate(`/company-prof/${newProfile.id}`); // Navigate to the specific profile
   };
 
   return (

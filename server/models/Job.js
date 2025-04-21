@@ -42,15 +42,27 @@ const jobSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  status: {
-    type: String,
-    enum: ['Active', 'Inactive'],
-    default: 'Active'
+  deadline: {
+    type: Date,
+    required: true
   },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  isActive: {
+    type: Boolean,
+    default: true
   }
 }, { timestamps: true });
+
+// Virtual property to check if job posting is expired
+jobSchema.virtual('isExpired').get(function() {
+  return this.deadline < new Date();
+});
+
+// Include virtuals when converting document to JSON
+jobSchema.set('toJSON', { virtuals: true });
+jobSchema.set('toObject', { virtuals: true });
 
 module.exports = mongoose.model('Job', jobSchema);

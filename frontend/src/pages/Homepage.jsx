@@ -1,5 +1,5 @@
 // src/components/HomePage.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
@@ -8,11 +8,16 @@ import axios from 'axios';
 const HomePage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [newJobs, setNewJobs] = useState([]);
+  const [filteredJobs, setFilteredJobs] = useState([]);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userRole, setUserRole] = useState("");
   const [userId, setUserId] = useState(null);
   const [topCompanies, setTopCompanies] = useState([]);
+  const [filteredCompanies, setFilteredCompanies] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [dropdownResults, setDropdownResults] = useState({ jobs: [], companies: [] });
   const navigate = useNavigate();
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     const fetchNewJobs = async () => {
@@ -24,13 +29,13 @@ const HomePage = () => {
         const response = await axios.get('http://localhost:5000/api/jobs', config);
         console.log('Fetched new jobs:', response.data);
         setNewJobs(response.data);
+        setFilteredJobs(response.data);
       } catch (error) {
         console.error('Error fetching new jobs:', error);
       }
     };
 
     const fetchTopCompanies = () => {
-      // Hardcoded companies
       const staticCompanies = [
         { name: "CV Raman", rating: 4.8, link: "/CVRamanProfile" },
         { name: "LeapFrog Private Limited", rating: 4.5, link: "/LeapFrogProfile" },
@@ -38,14 +43,11 @@ const HomePage = () => {
         { name: "Cotiviti", rating: 4.6, link: "/CotivitiProfile" },
       ];
 
-      // Fetch dynamic companies from localStorage
       const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
       let dynamicCompanies = [];
       if (profiles.length > 0) {
         const sortedProfiles = profiles.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
         const latestProfile = sortedProfiles[0];
-        
-        // Calculate rating based on reviews
         const reviews = JSON.parse(localStorage.getItem(`companyReviews_${latestProfile.id}`)) || [];
         const averageRating = reviews.length > 0
           ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
@@ -60,7 +62,9 @@ const HomePage = () => {
         ];
       }
 
-      setTopCompanies([...dynamicCompanies, ...staticCompanies]);
+      const allCompanies = [...dynamicCompanies, ...staticCompanies];
+      setTopCompanies(allCompanies);
+      setFilteredCompanies(allCompanies);
     };
 
     const checkAuth = () => {
@@ -88,12 +92,55 @@ const HomePage = () => {
     return () => window.removeEventListener("storage", checkAuth);
   }, []);
 
+  useEffect(() => {
+    const query = searchQuery.toLowerCase().trim();
+
+    const filteredJobResults = newJobs.filter(job =>
+      job.title.toLowerCase().includes(query) ||
+      job.company.toLowerCase().includes(query) ||
+      job.location.toLowerCase().includes(query)
+    );
+    setFilteredJobs(filteredJobResults);
+
+    const filteredCompanyResults = topCompanies.filter(company =>
+      company.name.toLowerCase().includes(query)
+    );
+    setFilteredCompanies(filteredCompanyResults);
+
+    const dropdownJobs = newJobs
+      .filter(job =>
+        job.title.toLowerCase().includes(query) ||
+        job.company.toLowerCase().includes(query) ||
+        job.location.toLowerCase().includes(query)
+      )
+      .slice(0, 3);
+    
+    const dropdownCompanies = topCompanies
+      .filter(company => company.name.toLowerCase().includes(query))
+      .slice(0, 3);
+
+    setDropdownResults({ jobs: dropdownJobs, companies: dropdownCompanies });
+    setShowDropdown(query.length > 0 && (dropdownJobs.length > 0 || dropdownCompanies.length > 0));
+  }, [searchQuery, newJobs, topCompanies]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setShowDropdown(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
   };
 
   const handleSearchClick = () => {
     console.log("Searching for:", searchQuery);
+    setShowDropdown(false);
   };
 
   const handleGenerateCV = () => {
@@ -112,6 +159,17 @@ const HomePage = () => {
     navigate("/CompanySetupForm");
   };
 
+  const handleJobClick = (jobId) => {
+    console.log("Navigating to job description with ID:", jobId);
+    setShowDropdown(false);
+    navigate(`/description/${jobId}`); // Updated to match BrowseJobs route
+  };
+
+  const handleCompanyClick = (link) => {
+    setShowDropdown(false);
+    navigate(link);
+  };
+
   return (
     <div className="min-h-screen bg-teal-50 text-teal-900">
       <Header />
@@ -120,20 +178,62 @@ const HomePage = () => {
         <h1 className="text-5xl font-bold text-teal-900">Welcome to OpportuNET</h1>
         <p className="mt-6 text-lg text-teal-700">Your one-stop platform to find your dream job or hire top talent.</p>
 
-        <div className="mt-8 max-w-xl mx-auto flex items-center">
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={handleSearch}
-            placeholder="Search for jobs or companies"
-            className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
-          />
-          <button
-            onClick={handleSearchClick}
-            className="ml-4 bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
-          >
-            Search
-          </button>
+        <div className="mt-8 max-w-xl mx-auto relative">
+          <div className="flex items-center">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={handleSearch}
+              placeholder="Search for jobs or companies"
+              className="w-full py-2 px-4 rounded-lg border-2 border-teal-600 text-gray-800 focus:outline-none focus:ring-2 focus:ring-teal-300"
+            />
+            <button
+              onClick={handleSearchClick}
+              className="ml-4 bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition"
+            >
+              Search
+            </button>
+          </div>
+
+          {showDropdown && (
+            <div
+              ref={dropdownRef}
+              className="absolute top-full left-0 right-0 mt-2 bg-white text-teal-900 shadow-lg rounded-lg max-h-96 overflow-y-auto z-10"
+            >
+              {dropdownResults.jobs.length > 0 && (
+                <div className="p-2">
+                  <h3 className="text-sm font-semibold text-teal-800 border-b border-teal-200 pb-1">Jobs</h3>
+                  {dropdownResults.jobs.map((job) => (
+                    <div
+                      key={job._id}
+                      onClick={() => handleJobClick(job._id)}
+                      className="p-2 hover:bg-teal-100 cursor-pointer rounded"
+                    >
+                      <p className="font-medium">{job.title}</p>
+                      <p className="text-sm text-gray-600">{job.company} - {job.location}</p>
+                      <p className="text-xs text-gray-500">Job ID: {job._id}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {dropdownResults.companies.length > 0 && (
+                <div className="p-2">
+                  <h3 className="text-sm font-semibold text-teal-800 border-b border-teal-200 pb-1">Companies</h3>
+                  {dropdownResults.companies.map((company, index) => (
+                    <div
+                      key={index}
+                      onClick={() => handleCompanyClick(company.link)}
+                      className="p-2 hover:bg-teal-100 cursor-pointer rounded"
+                    >
+                      <p className="font-medium">{company.name}</p>
+                      <p className="text-sm text-gray-600">Rating: {company.rating} / 5</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {isLoggedIn && userRole === "employer" && (
@@ -161,11 +261,11 @@ const HomePage = () => {
 
         <div className="mt-12">
           <h2 className="text-3xl font-semibold text-teal-800">Companies</h2>
-          {topCompanies.length === 0 ? (
-            <p className="mt-6 text-lg text-teal-700">No companies available yet.</p>
+          {filteredCompanies.length === 0 ? (
+            <p className="mt-6 text-lg text-teal-700">No companies match your search.</p>
           ) : (
             <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-              {topCompanies.map((company, index) => (
+              {filteredCompanies.map((company, index) => (
                 <Link to={company.link} key={index}>
                   <div
                     className="bg-white text-teal-700 p-6 rounded-lg shadow-lg hover:shadow-2xl transition transform hover:scale-105"
@@ -181,11 +281,11 @@ const HomePage = () => {
 
         <div className="mt-12">
           <h2 className="text-3xl font-semibold text-teal-800">New Jobs</h2>
-          {newJobs.length === 0 ? (
-            <p className="mt-6 text-lg text-teal-700">No new jobs available.</p>
+          {filteredJobs.length === 0 ? (
+            <p className="mt-6 text-lg text-teal-700">No jobs match your search.</p>
           ) : (
             <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {newJobs.map((job) => (
+              {filteredJobs.map((job) => (
                 <div
                   key={job._id}
                   className="relative bg-gradient-to-br from-teal-100 to-teal-200 text-teal-900 p-6 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
@@ -206,9 +306,12 @@ const HomePage = () => {
                         {job.noOfPositions} Position{job.noOfPositions !== 1 ? 's' : ''}
                       </span>
                     </div>
+                    <Link to={`/description/${job._id}`} className="w-1/2"></Link>
                     <p className="text-teal-800 text-sm line-clamp-2 mb-4">{job.description}</p>
                     <button className="w-full bg-teal-700 text-white py-2 rounded-lg hover:bg-teal-800 transition">
+                      <Link to={`/description/${job._id}`} className="w-1/2">
                       Apply Now
+                      </Link>
                     </button>
                   </div>
                 </div>

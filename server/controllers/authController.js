@@ -314,8 +314,17 @@ exports.userInfo = async (req, res) => {
       experienceLevel: user.experienceLevel,
       education: user.education
     };
-    console.log("User info response:", userData);
 
+    // If user is an employer, fetch their posted jobs
+    if (user.role === 'employer') {
+      const postedJobs = await Job.find({ userId: user._id })
+        .select('title location salary status _id')
+        .sort({ createdAt: -1 });
+      userData.postedJobs = postedJobs;
+      console.log('Including posted jobs:', postedJobs);
+    }
+
+    console.log("User info response:", userData);
     res.json(userData);
   } catch (error) {
     console.error("User info error:", error);

@@ -8,6 +8,7 @@ import Footer from './Footer';
 const JobPosting = () => {
   const [auth] = useAuth();
   const navigate = useNavigate();
+  const [employerData, setEmployerData] = useState(null);
 
   // Add debug logging
   useEffect(() => {
@@ -29,6 +30,37 @@ const JobPosting = () => {
     company: '',
   });
 
+  // Fetch employer data when component mounts
+  useEffect(() => {
+    const fetchEmployerData = async () => {
+      try {
+        if (!auth?.token) {
+          navigate('/login');
+          return;
+        }
+
+        const response = await axios.get('http://localhost:5000/api/auth/userInfo', {
+          headers: {
+            Authorization: `Bearer ${auth.token}`
+          }
+        });
+
+        console.log('Fetched employer data:', response.data);
+        setEmployerData(response.data);
+        // Pre-fill the company name
+        setJob(prev => ({
+          ...prev,
+          company: response.data.companyName || ''
+        }));
+      } catch (error) {
+        console.error('Error fetching employer data:', error);
+        alert('Error loading your profile data. Please try again.');
+      }
+    };
+
+    fetchEmployerData();
+  }, [auth, navigate]);
+
   const handleChange = (e) => {
     setJob({ ...job, [e.target.name]: e.target.value });
   };
@@ -42,10 +74,14 @@ const JobPosting = () => {
       return;
     }
 
+    // Validate company name matches employer's company
+    if (job.company !== employerData?.companyName) {
+      alert('Please use your registered company name');
+      return;
+    }
+
     try {
-      // Log the auth token being used
-      console.log('Using auth token:', auth.token);
-      
+      console.log('Submitting job with data:', job);
       const response = await axios.post(
         'http://localhost:5000/api/jobs',
         job,
@@ -59,7 +95,14 @@ const JobPosting = () => {
 
       console.log('Job posting response:', response.data);
       alert('Job posted successfully!');
-      navigate('/profile', { state: { refresh: true } });
+      
+      // Navigate to the correct employer profile page
+      navigate('/EmployerProfile', { 
+        state: { 
+          refresh: true,
+          timestamp: new Date().getTime() 
+        } 
+      });
     } catch (error) {
       console.error('Error details:', error.response || error);
       if (error.response?.status === 401) {
@@ -113,10 +156,11 @@ const JobPosting = () => {
           <div style={styles.inputGroup}>
             <label style={styles.label}>Salary</label>
             <input
-              type="number"
+              type="text"
               name="salary"
               value={job.salary}
               onChange={handleChange}
+              required
               style={styles.input}
             />
           </div>
@@ -136,28 +180,38 @@ const JobPosting = () => {
           </div>
           <div style={styles.inputGroup}>
             <label style={styles.label}>Job Type</label>
-            <input
-              type="text"
+            <select
               name="jobType"
               value={job.jobType}
               onChange={handleChange}
               required
               style={styles.input}
-            />
+            >
+              <option value="">Select Job Type</option>
+              <option value="Full-time">Full-time</option>
+              <option value="Part-time">Part-time</option>
+              <option value="Contract">Contract</option>
+              <option value="Internship">Internship</option>
+            </select>
           </div>
         </div>
 
         <div style={styles.row}>
           <div style={styles.inputGroup}>
             <label style={styles.label}>Experience Level</label>
-            <input
-              type="text"
+            <select
               name="experienceLevel"
               value={job.experienceLevel}
               onChange={handleChange}
               required
               style={styles.input}
-            />
+            >
+              <option value="">Select Experience Level</option>
+              <option value="Entry Level">Entry Level</option>
+              <option value="Mid Level">Mid Level</option>
+              <option value="Senior Level">Senior Level</option>
+              <option value="Executive">Executive</option>
+            </select>
           </div>
           <div style={styles.inputGroup}>
             <label style={styles.label}>No of Position</label>
@@ -167,6 +221,7 @@ const JobPosting = () => {
               value={job.noOfPositions}
               onChange={handleChange}
               required
+              min="1"
               style={styles.input}
             />
           </div>
@@ -180,8 +235,10 @@ const JobPosting = () => {
             value={job.company}
             onChange={handleChange}
             required
-            style={styles.input}
+            disabled
+            style={{...styles.input, backgroundColor: '#f0f0f0'}}
           />
+          <small style={{color: '#666'}}>This is automatically filled with your registered company name</small>
         </div>
 
         <button type="submit" style={styles.button}>Post New Job</button>

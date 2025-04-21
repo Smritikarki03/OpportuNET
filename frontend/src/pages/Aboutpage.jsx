@@ -135,20 +135,20 @@ export default function AboutUs() {
                 collaboration, there are many ways to get involved. Reach out to us, attend our
                 webinars, or explore partnership opportunities to help shape the future of work.
               </p>
-              <button className="mt-6 bg-teal-700 text-white py-2 px-6 rounded-lg hover:bg-teal-800 transition">
+              {/* <button className="mt-6 bg-teal-700 text-white py-2 px-6 rounded-lg hover:bg-teal-800 transition">
                 Contact Us
-              </button>
+              </button> */}
             </motion.div>
           </section>
 
           {/* Bottom Centered Image */}
-          <motion.div variants={itemVariants} className="flex justify-center mt-12">
+          {/* <motion.div variants={itemVariants} className="flex justify-center mt-12">
             <img
               src="https://images.unsplash.com/photo-1516321318423-8d57e48f8f32?ixlib=rb-4.0.3&auto=format&fit=crop&w=500&q=80"
               alt="Join Our Community"
               className="w-full max-w-md rounded-xl shadow-lg transform hover:scale-105 transition duration-300"
             />
-          </motion.div>
+          </motion.div> */}
         </motion.div>
       </main>
 

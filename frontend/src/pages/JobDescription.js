@@ -51,7 +51,7 @@ const JobDescription = () => {
               <div className="flex space-x-4 mt-2">
                 <span className="text-gray-600">{job.noOfPositions} Positions</span>
                 <span className="text-gray-600">{job.jobType}</span>
-                <span className="text-gray-600">{job.salary} LPA</span>
+                <span className="text-gray-600">{job.salary} Rs</span>
               </div>
             </div>
             <button
@@ -69,7 +69,7 @@ const JobDescription = () => {
               <p><strong>Location:</strong> {job.location}</p>
               <p><strong>Description:</strong> {job.description}</p>
               <p><strong>Experience:</strong> {job.experienceLevel}</p>
-              <p><strong>Salary:</strong> {job.salary} LPA</p>
+              <p><strong>Salary:</strong> {job.salary} Rs</p>
               <p><strong>Total Applicants:</strong> {job.totalApplicants}</p>
               <p><strong>Posted Date:</strong> {new Date(job.createdAt).toISOString().split('T')[0]}</p>
             </div>
