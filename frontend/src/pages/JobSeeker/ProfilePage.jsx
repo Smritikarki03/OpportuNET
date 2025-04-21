@@ -45,6 +45,12 @@ const ProfilePage = () => {
         };
         console.log("Processed user data with auth ID:", userData);
         setUser(userData);
+        
+        // Set posted jobs from user data if user is an employer
+        if (userData.role === 'employer' && userData.postedJobs) {
+          setPostedJobs(userData.postedJobs);
+        }
+        
         localStorage.setItem("user", JSON.stringify(userData));
 
         let isProfileIncomplete = false;
@@ -64,50 +70,6 @@ const ProfilePage = () => {
     }
   }, [auth]);
 
-  const fetchPostedJobs = useCallback(async () => {
-    console.log("Attempting to fetch posted jobs...");
-    console.log("Current user:", user);
-    console.log("Auth context:", auth);
-    
-    // Get the user ID from auth context
-    const userId = auth?.user?.id || auth?.user?._id;
-    console.log("User ID from auth:", userId);
-    
-    if (!user || !userId) {
-      console.log("No user or user ID available, skipping job fetch");
-      return;
-    }
-    
-    try {
-      console.log("Making API request to fetch jobs for user ID:", userId);
-      const response = await axios.get('http://localhost:5000/api/jobs', {
-        headers: {
-          Authorization: `Bearer ${auth.token}`,
-          'Content-Type': 'application/json'
-        },
-        params: {
-          userId: userId
-        }
-      });
-      
-      console.log("API Response:", response);
-      console.log("Fetched jobs data:", response.data);
-      
-      if (Array.isArray(response.data)) {
-        setPostedJobs(response.data);
-        console.log("Successfully set posted jobs:", response.data.length, "jobs");
-      } else {
-        console.error("Unexpected response format:", response.data);
-        setPostedJobs([]);
-      }
-    } catch (error) {
-      console.error("Error fetching posted jobs:", error);
-      console.error("Error details:", error.response?.data);
-      setError("Failed to fetch posted jobs: " + (error.response?.data?.message || error.message));
-      setPostedJobs([]);
-    }
-  }, [user, auth]);
-
   useEffect(() => {
     if (location.state?.refresh) {
       fetchUserData();
@@ -118,6 +80,12 @@ const ProfilePage = () => {
       console.log("Setting user from location state:", updatedUser);
       console.log("User ID from location state:", updatedUser._id);
       setUser(updatedUser);
+      
+      // Set posted jobs from updated user data if user is an employer
+      if (updatedUser.role === 'employer' && updatedUser.postedJobs) {
+        setPostedJobs(updatedUser.postedJobs);
+      }
+      
       setIsLoading(false);
       localStorage.setItem("user", JSON.stringify(updatedUser));
       let isProfileIncomplete = false;
@@ -131,28 +99,6 @@ const ProfilePage = () => {
       fetchUserData();
     }
   }, [fetchUserData, location.state, navigate, location.pathname]);
-
-  // Update the condition in the useEffect
-  useEffect(() => {
-    console.log("User state changed. Current user:", user);
-    console.log("User role:", user?.role);
-    console.log("Auth context in effect:", auth);
-    
-    const userId = auth?.user?.id || auth?.user?._id;
-    console.log("User ID from auth in effect:", userId);
-    
-    if (user && user.role === "employer" && userId) {
-      console.log("Conditions met to fetch posted jobs");
-      fetchPostedJobs();
-    } else {
-      console.log("Conditions not met to fetch jobs:", {
-        hasUser: !!user,
-        isEmployer: user?.role === "employer",
-        hasId: !!userId,
-        authUser: auth?.user
-      });
-    }
-  }, [user, fetchPostedJobs, auth]);
 
   const closePopup = () => setShowPopup(false);
 

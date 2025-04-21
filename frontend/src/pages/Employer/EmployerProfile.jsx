@@ -38,43 +38,28 @@ const EmployerProfile = () => {
         console.log('Employer data:', employerResponse.data);
 
         // Get the employer ID from the response
-        const employerId = employerResponse.data._id || employerResponse.data.id;
-        if (!employerId) {
-          console.error("No employer ID found in response");
-          setError("Failed to get employer information");
-          return;
-        }
-
-        // Fetch jobs data
-        console.log("Fetching jobs for userId:", employerId);
-        const jobsResponse = await axios.get('http://localhost:5000/api/jobs', {
+        const employerId = employerResponse.data._id;
+        
+        // Fetch jobs with employer ID filter
+        const jobsResponse = await axios.get(`http://localhost:5000/api/jobs?userId=${employerId}`, {
           headers: { 
             Authorization: `Bearer ${auth.token}`,
             'Content-Type': 'application/json'
-          },
-          params: {
-            userId: employerId
           }
         });
-        console.log('Jobs response:', jobsResponse);
-        console.log('Jobs data:', jobsResponse.data);
-
-        // Ensure jobs data is an array
-        const jobs = Array.isArray(jobsResponse.data) ? jobsResponse.data : 
-                    (jobsResponse.data.jobs ? jobsResponse.data.jobs : []);
+        
+        console.log('Jobs response:', jobsResponse.data);
 
         // Combine the data
         const employerData = {
           ...employerResponse.data,
-          postedJobs: jobs
+          postedJobs: jobsResponse.data
         };
 
-        console.log('Final employer data with jobs:', employerData);
         setEmployer(employerData);
       } catch (err) {
         console.error('Error in fetchData:', err);
         if (err.response?.status === 401) {
-          // If unauthorized, clear auth and redirect to login
           navigate('/Login');
         } else {
           setError(err.message || "Failed to load profile data");

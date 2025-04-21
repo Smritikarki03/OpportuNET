@@ -20,8 +20,6 @@ import Sidebar from "../../Components/Sidebar";
 
 const AdminDashboard = () => {
   const [jobs, setJobs] = useState([]);
-  const [jobSeekers, setJobSeekers] = useState([]);
-  const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({
     totalJobs: 0,
@@ -40,22 +38,29 @@ const AdminDashboard = () => {
 
   const approveJob = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/jobs/${id}/approve`, {
+      const response = await fetch(`http://localhost:5000/api/jobs/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
+        body: JSON.stringify({ 
+          status: 'approved',
+          updatedAt: new Date().toISOString()
+        })
       });
 
-      if (response.ok) {
-        setJobs(jobs.filter((job) => job._id !== id));
-        setStats(prev => ({
-          ...prev,
-          pendingApprovals: prev.pendingApprovals - 1,
-          activeJobs: prev.activeJobs + 1
-        }));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to approve job");
       }
+
+      setJobs(jobs.filter((job) => job._id !== id));
+      setStats(prev => ({
+        ...prev,
+        pendingApprovals: prev.pendingApprovals - 1,
+        activeJobs: prev.activeJobs + 1
+      }));
     } catch (error) {
       console.error('Error approving job:', error);
     }
@@ -63,21 +68,28 @@ const AdminDashboard = () => {
 
   const rejectJob = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/jobs/${id}/reject`, {
+      const response = await fetch(`http://localhost:5000/api/jobs/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('token')}`,
         },
+        body: JSON.stringify({ 
+          status: 'rejected',
+          updatedAt: new Date().toISOString()
+        })
       });
 
-      if (response.ok) {
-        setJobs(jobs.filter((job) => job._id !== id));
-        setStats(prev => ({
-          ...prev,
-          pendingApprovals: prev.pendingApprovals - 1
-        }));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to reject job");
       }
+
+      setJobs(jobs.filter((job) => job._id !== id));
+      setStats(prev => ({
+        ...prev,
+        pendingApprovals: prev.pendingApprovals - 1
+      }));
     } catch (error) {
       console.error('Error rejecting job:', error);
     }
@@ -90,42 +102,44 @@ const AdminDashboard = () => {
         const token = localStorage.getItem('token');
 
         // Fetch all data in parallel
-        const [jobsRes, jobSeekersRes, employeesRes, statsRes] = await Promise.all([
-          fetch("http://localhost:5000/api/jobs/pending", {
-            headers: { Authorization: `Bearer ${token}` }
+        const [jobsRes, statsRes] = await Promise.all([
+          fetch("http://localhost:5000/api/jobs", {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           }),
-          fetch("http://localhost:5000/api/users/jobseekers", {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          fetch("http://localhost:5000/api/users/employers", {
-            headers: { Authorization: `Bearer ${token}` }
-          }),
-          fetch("http://localhost:5000/api/admin/stats", {
-            headers: { Authorization: `Bearer ${token}` }
+          fetch("http://localhost:5000/api/adminroute/user-stats", {
+            headers: { 
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
           })
         ]);
 
-        const [jobsData, jobSeekersData, employeesData, statsData] = await Promise.all([
+        if (!jobsRes.ok) {
+          const errorData = await jobsRes.json();
+          throw new Error(errorData.message || "Failed to fetch jobs");
+        }
+        if (!statsRes.ok) {
+          const errorData = await statsRes.json();
+          throw new Error(errorData.message || "Failed to fetch stats");
+        }
+
+        const [jobsData, statsData] = await Promise.all([
           jobsRes.json(),
-          jobSeekersRes.json(),
-          employeesRes.json(),
           statsRes.json()
         ]);
 
-        // Calculate total counts
-        const totalJobSeekers = jobSeekersData.length;
-        const totalEmployers = employeesData.length;
-        const totalUsers = totalJobSeekers + totalEmployers;
-
-        setJobs(jobsData);
-        setJobSeekers(jobSeekersData);
-        setEmployees(employeesData);
+        // Filter pending jobs on the client side
+        const pendingJobs = jobsData.filter(job => job.status === 'pending');
+        
+        setJobs(pendingJobs);
         setStats(prev => ({
           ...prev,
           ...statsData,
-          totalJobSeekers,
-          totalEmployers,
-          totalUsers
+          totalUsers: (statsData.totalJobSeekers || 0) + (statsData.totalEmployers || 0),
+          pendingApprovals: pendingJobs.length
         }));
       } catch (error) {
         console.error("Error fetching data:", error);

@@ -16,7 +16,6 @@ import EditProfile from './pages/JobSeeker/EditProfilePage';
 // import EditEmployerProfile from './pages/Employer/CompanyProfile';
 import EditEMProfile from './pages/Employer/EMEdit';
 import ResetPassword from './pages/auth/ResetPW';
-import EmployerDashboard from './pages/Employer/EmployerDB';
 import AdminDashboard from './pages/Admin/AdminDB';
 import BrowseJobs from './pages/Browse';
 import HelpPage from './pages/help';
@@ -60,15 +59,14 @@ const App = () => {
           {/* <Route path="/EditEP" element={<EditEmployerProfile/>} /> */}
           <Route path="/EMEdit" element={<EditEMProfile/>} />
           <Route path="/reset-password" element={<ResetPassword/>} />
-          <Route path="/EmployerDB" element={<EmployerDashboard/>} />
           <Route path="/AdminDB" element={<AdminDashboard/>} />
           <Route path="/Browse" element={<BrowseJobs/>} />
           <Route path="/help" element={<HelpPage/>} />
           <Route path="/Contact" element={<ContactPage/>} />
           <Route path="/CV" element={<CV/>} />
           <Route path="/AdminNotifications" element={<AdminNotifications/>} />
-          <Route path="/JobPost" element={<JobPosting/>} />
-          <Route path="/CompanySU" element={<CompanySU/>} />
+          <Route path="/post-job" element={<JobPosting/>} />
+          <Route path="/employer/profile" element={<CompanySU/>} />
           <Route path="/description/:id" element={<JobDescription />} />
           <Route path="/apply/:id" element={<ApplyPage />} />
           <Route path="/ManageJob" element={<ManageJobs />} />
