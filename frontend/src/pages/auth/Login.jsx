@@ -17,23 +17,24 @@ const Login = () => {
     setError(null);
 
     try {
-      console.log("Attempting login with:", { email, password }); // Debug: Log input
+      console.log("Attempting login with:", { email, password });
       const response = await axios.post("http://localhost:5000/api/auth/login", {
-        email: email.trim().toLowerCase(), // Normalize email
-        password: password.trim(), // Trim password
+        email: email.trim().toLowerCase(),
+        password: password.trim(),
       });
 
-      console.log("Server response:", response.data); // Debug: Log response
+      console.log("Server response:", response.data);
       const { user, token } = response.data;
 
       if (token) {
         const userName = user.name || user.firstName || user.username || email.split("@")[0];
-        setAuth({ user, token });
-        localStorage.setItem("auth", token);
+        const authData = { user, token };
+        setAuth(authData);
+        localStorage.setItem("auth", JSON.stringify(authData));
         localStorage.setItem("userName", userName);
         localStorage.setItem("userRole", user.role);
-        localStorage.setItem("userId", user.id); // Store user ID
-        localStorage.setItem("isCompanySetup", user.isCompanySetup.toString()); // Store isCompanySetup flag
+        localStorage.setItem("userId", user.id);
+        localStorage.setItem("isCompanySetup", user.isCompanySetup.toString());
 
         if (user.role === "admin") {
           navigate("/AdminDB");
@@ -48,7 +49,7 @@ const Login = () => {
         }
       }
     } catch (err) {
-      console.error("Login error details:", err.response ? err.response.data : err.message); // Detailed error log
+      console.error("Login error details:", err.response ? err.response.data : err.message);
       if (err.response?.status === 403) {
         setError("Your account is awaiting approval from the admin.");
       } else {

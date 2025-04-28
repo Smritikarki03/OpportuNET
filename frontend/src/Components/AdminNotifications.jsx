@@ -20,7 +20,7 @@ const AdminNotifications = () => {
           return;
         }
 
-        const response = await axios.get("http://localhost:5000/api/admin/notifications", {
+        const response = await axios.get("http://localhost:5000/api/adminroute/notifications", {
           headers: { Authorization: `Bearer ${token}` },
         });
 

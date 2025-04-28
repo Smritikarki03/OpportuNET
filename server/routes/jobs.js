@@ -5,20 +5,55 @@ const Job = require('../models/Job');
 const { authenticate } = require('../middleware/authMiddleware');
 const mongoose = require('mongoose');
 
+// Middleware to check and update job status based on deadline
+const checkJobStatus = async (req, res, next) => {
+  try {
+    const jobs = await Job.find({ status: 'Active' });
+    for (const job of jobs) {
+      if (job.deadline < new Date()) {
+        job.status = 'Inactive';
+        await job.save();
+      }
+    }
+    next();
+  } catch (error) {
+    console.error('Error checking job status:', error);
+    next();
+  }
+};
+
+// Apply the middleware to all routes
+router.use(checkJobStatus);
+
 router.post('/', authenticate, async (req, res) => {
   try {
+    console.log('Received job posting request:', req.body);
+    console.log('User making request:', req.user);
+
     // Ensure the user is an employer
     if (req.user.role !== 'employer') {
+      console.log('User is not an employer:', req.user.role);
       return res.status(403).json({ message: 'Only employers can post jobs.' });
     }
 
-    const { title, description, requirements, salary, location, jobType, experienceLevel, noOfPositions, company } = req.body;
+    const { title, description, requirements, salary, location, jobType, experienceLevel, noOfPositions, company, deadline } = req.body;
 
     // Validate required fields
-    const requiredFields = ['title', 'description', 'requirements', 'salary', 'location', 'jobType', 'experienceLevel', 'noOfPositions', 'company'];
+    const requiredFields = ['title', 'description', 'requirements', 'salary', 'location', 'jobType', 'experienceLevel', 'noOfPositions', 'company', 'deadline'];
     const missingFields = requiredFields.filter(field => !req.body[field]);
     if (missingFields.length > 0) {
+      console.log('Missing required fields:', missingFields);
       return res.status(400).json({ message: `Missing required fields: ${missingFields.join(', ')}` });
+    }
+
+    // Validate deadline is not in the past
+    const deadlineDate = new Date(deadline);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (deadlineDate < today) {
+      console.log('Invalid deadline - date is in the past:', deadline);
+      return res.status(400).json({ message: 'Deadline cannot be in the past' });
     }
 
     // Create the job with userId set to the authenticated user's id
@@ -31,40 +66,53 @@ router.post('/', authenticate, async (req, res) => {
       location,
       jobType,
       experienceLevel,
-      noOfPositions,
+      noOfPositions: parseInt(noOfPositions),
       company,
+      deadline: new Date(deadline),
       status: 'Active',
       createdAt: new Date(),
-      totalApplicants: 0,
+      totalApplicants: 0
     };
 
+    console.log('Creating job with data:', jobData);
     const job = new Job(jobData);
     await job.save();
     console.log(`Job posted successfully by ${req.user.id}:`, job);
     res.status(201).json({ message: 'Job posted successfully', job });
   } catch (error) {
     console.error('Error posting job:', error);
-    res.status(500).json({ message: 'Error posting job', error: error.message });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Error posting job', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 });
 
+// GET /api/jobs - Get all jobs (admin) or filtered jobs based on role
 router.get('/', authenticate, async (req, res) => {
   try {
-    console.log('GET /jobs - User:', req.user);
     let query = {};
     
-    // If userId is provided in query params, filter by it
-    if (req.query.userId) {
-      query.userId = req.query.userId;
+    // If user is admin, show all jobs
+    if (req.user.role.toLowerCase() === 'admin') {
+      // Admin can see all jobs
+      query = {};
     }
     // If user is employer, only show their jobs
-    else if (req.user && req.user.role === 'employer') {
+    else if (req.user.role.toLowerCase() === 'employer') {
       query.userId = req.user.id;
     }
+    // For job seekers, only show active jobs
+    else if (req.user.role.toLowerCase() === 'jobseeker') {
+      query.status = 'Active';
+    }
 
-    console.log('Job query:', query);
-    const jobs = await Job.find(query).sort({ createdAt: -1 });
-    console.log(`Found ${jobs.length} jobs for query:`, query);
+    const jobs = await Job.find(query)
+      .sort({ createdAt: -1 })
+      .populate('userId', 'name email');
+
     res.json(jobs);
   } catch (error) {
     console.error('Error fetching jobs:', error);
@@ -100,17 +148,28 @@ router.get('/:id', async (req, res) => {
 router.delete('/:id', authenticate, async (req, res) => {
   try {
     const jobId = req.params.id;
-    console.log('Received DELETE request for job ID:', jobId);
     
-    // First check if the job exists and belongs to the user
-    const job = await Job.findOne({ _id: jobId, userId: req.user.id });
-    if (!job) {
-      return res.status(404).json({ message: 'Job not found or unauthorized' });
+    // Validate if the ID is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(jobId)) {
+      return res.status(400).json({ message: 'Invalid job ID format' });
     }
-    
-    await Job.findByIdAndDelete(jobId);
-    res.status(200).json({ message: 'Job deleted successfully' });
+
+    // First check if the job exists
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    // Allow admin to delete any job, or employer to delete their own jobs
+    if (req.user.role.toLowerCase() === 'admin' || job.userId.toString() === req.user.id) {
+      await Job.findByIdAndDelete(jobId);
+      return res.status(200).json({ message: 'Job deleted successfully' });
+    }
+
+    // If not admin or job owner, return unauthorized
+    return res.status(403).json({ message: 'Unauthorized to delete this job' });
   } catch (err) {
+    console.error('Error deleting job:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });

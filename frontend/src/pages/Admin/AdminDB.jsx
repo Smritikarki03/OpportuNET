@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
+import { useAuth } from "../../context/auth";
 import { 
   FaTachometerAlt, 
   FaBriefcase, 
@@ -12,20 +13,44 @@ import {
   FaSearch,
   FaFilter,
   FaUserTie,
-  FaGraduationCap,
-  FaCheck
+  FaGraduationCap
 } from "react-icons/fa";
-import { MdCheckCircle, MdCancel } from "react-icons/md";
 import Sidebar from "../../Components/Sidebar";
+import { Pie, Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+} from 'chart.js';
+import axios from 'axios';
+import { toast, ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+
+// Register ChartJS components
+ChartJS.register(
+  ArcElement,
+  Tooltip,
+  Legend,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title
+);
 
 const AdminDashboard = () => {
-  const [jobs, setJobs] = useState([]);
+  const [auth] = useAuth();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [stats, setStats] = useState({
     totalJobs: 0,
     activeJobs: 0,
+    inactiveJobs: 0,
     totalApplications: 0,
-    pendingApprovals: 0,
     totalJobSeekers: 0,
     totalEmployers: 0,
     totalUsers: 0
@@ -36,130 +61,171 @@ const AdminDashboard = () => {
 
   const navigate = useNavigate();
 
-  const approveJob = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/jobs/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+  // Chart data for user distribution (modern teal & blue)
+  const userDistributionData = {
+    labels: ['Job Seekers', 'Employers'],
+    datasets: [
+      {
+        data: [stats.totalJobSeekers, stats.totalEmployers],
+        backgroundColor: [
+          '#14b8a6', // Teal
+          '#3b82f6', // Blue
+        ],
+        borderColor: [
+          '#14b8a6',
+          '#3b82f6',
+        ],
+        borderWidth: 2,
+      },
+    ],
+  };
+
+  // Chart data for job status (Bar chart)
+  const jobStatusBarData = {
+    labels: ['Active Jobs', 'Inactive Jobs'],
+    datasets: [
+      {
+        label: 'Jobs',
+        data: [stats.activeJobs, stats.inactiveJobs],
+        backgroundColor: [
+          '#00B8D9', // Bright Blue
+          '#6554C0', // Purple
+        ],
+        borderRadius: 8,
+        barThickness: 40,
+      },
+    ],
+  };
+
+  // Chart options with doughnut cutout and improved legend/title
+  const chartOptions = {
+    responsive: true,
+    cutout: '70%', // Doughnut style
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: {
+          font: { size: 16, weight: 'bold' },
+          color: '#333',
+          usePointStyle: true,
         },
-        body: JSON.stringify({ 
-          status: 'approved',
-          updatedAt: new Date().toISOString()
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to approve job");
+      },
+      title: {
+        display: true,
+        text: '',
+        font: {
+          size: 18,
+          weight: 'bold',
+        },
+        color: '#222',
+        padding: { top: 10, bottom: 20 },
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed;
+            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+            const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+            return `${label}: ${value} (${percent}%)`;
+          }
+        }
+      },
+      datalabels: {
+        display: true,
+        color: '#222',
+        font: {
+          weight: 'bold',
+          size: 16,
+        },
+        formatter: (value, context) => {
+          const total = context.dataset.data.reduce((a, b) => a + b, 0);
+          const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+          return `${percent}%`;
+        }
       }
-
-      setJobs(jobs.filter((job) => job._id !== id));
-      setStats(prev => ({
-        ...prev,
-        pendingApprovals: prev.pendingApprovals - 1,
-        activeJobs: prev.activeJobs + 1
-      }));
-    } catch (error) {
-      console.error('Error approving job:', error);
     }
   };
 
-  const rejectJob = async (id) => {
-    try {
-      const response = await fetch(`http://localhost:5000/api/jobs/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
+  // Bar chart options
+  const barOptions = {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: {
+        display: false,
+      },
+      title: {
+        display: true,
+        text: 'Job Status',
+        font: {
+          size: 18,
+          weight: 'bold',
         },
-        body: JSON.stringify({ 
-          status: 'rejected',
-          updatedAt: new Date().toISOString()
-        })
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reject job");
+        color: '#222',
+        padding: { top: 10, bottom: 20 },
+      },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const label = context.label || '';
+            const value = context.parsed.x;
+            return `${label}: ${value}`;
+          }
+        }
       }
-
-      setJobs(jobs.filter((job) => job._id !== id));
-      setStats(prev => ({
-        ...prev,
-        pendingApprovals: prev.pendingApprovals - 1
-      }));
-    } catch (error) {
-      console.error('Error rejecting job:', error);
-    }
+    },
+    scales: {
+      x: {
+        beginAtZero: true,
+        grid: { color: '#eee' },
+        ticks: { color: '#333', font: { size: 14, weight: 'bold' } },
+      },
+      y: {
+        grid: { color: '#eee' },
+        ticks: { color: '#333', font: { size: 16, weight: 'bold' } },
+      },
+    },
   };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        setLoading(true);
-        const token = localStorage.getItem('token');
-
-        // Fetch all data in parallel
-        const [jobsRes, statsRes] = await Promise.all([
-          fetch("http://localhost:5000/api/jobs", {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          }),
-          fetch("http://localhost:5000/api/adminroute/user-stats", {
-            headers: { 
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json'
-            }
-          })
-        ]);
-
-        if (!jobsRes.ok) {
-          const errorData = await jobsRes.json();
-          throw new Error(errorData.message || "Failed to fetch jobs");
+        if (!auth?.token) {
+          throw new Error('No authentication token found');
         }
+
+        const statsRes = await fetch("http://localhost:5000/api/adminroute/user-stats", {
+          headers: { 
+            Authorization: `Bearer ${auth.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
         if (!statsRes.ok) {
           const errorData = await statsRes.json();
-          throw new Error(errorData.message || "Failed to fetch stats");
+          throw new Error(`Failed to fetch stats: ${errorData.message || statsRes.statusText}`);
         }
 
-        const [jobsData, statsData] = await Promise.all([
-          jobsRes.json(),
-          statsRes.json()
-        ]);
-
-        // Filter pending jobs on the client side
-        const pendingJobs = jobsData.filter(job => job.status === 'pending');
-        
-        setJobs(pendingJobs);
-        setStats(prev => ({
-          ...prev,
-          ...statsData,
-          totalUsers: (statsData.totalJobSeekers || 0) + (statsData.totalEmployers || 0),
-          pendingApprovals: pendingJobs.length
-        }));
+        const statsData = await statsRes.json();
+        setStats(statsData);
+        setLoading(false);
       } catch (error) {
-        console.error("Error fetching data:", error);
-      } finally {
+        console.error('Error in fetchData:', error);
+        setError(error.message);
         setLoading(false);
       }
     };
 
     fetchData();
+    // Refresh data every 30 seconds
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, []);
-
-  const filteredJobs = jobs.filter(job => 
-    job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    job.company.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  }, [auth?.token]);
 
   return (
     <div className="flex min-h-screen bg-gray-50 text-gray-800">
+      <ToastContainer position="top-right" autoClose={3000} />
       <Sidebar />
 
       <main className="flex-1 p-8">
@@ -207,7 +273,7 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+              <div className="p-3 rounded-full bg-emerald-100 text-emerald-600">
                 <FaBriefcase className="text-2xl" />
               </div>
               <div className="ml-4">
@@ -218,12 +284,12 @@ const AdminDashboard = () => {
           </div>
           <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
+              <div className="p-3 rounded-full bg-slate-100 text-slate-600">
                 <FaFileAlt className="text-2xl" />
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Pending Approvals</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.pendingApprovals}</p>
+                <p className="text-sm font-medium text-gray-600">Inactive Jobs</p>
+                <p className="text-2xl font-semibold text-gray-900">{stats.inactiveJobs}</p>
               </div>
             </div>
           </div>
@@ -236,6 +302,23 @@ const AdminDashboard = () => {
                 <p className="text-sm font-medium text-gray-600">Total Applications</p>
                 <p className="text-2xl font-semibold text-gray-900">{stats.totalApplications}</p>
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Charts Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4">User Distribution</h2>
+            <div className="h-64">
+              <Pie data={userDistributionData} options={chartOptions} />
+            </div>
+          </div>
+          
+          <div className="bg-white p-6 rounded-lg shadow-md">
+            <h2 className="text-lg font-semibold mb-4">Job Status</h2>
+            <div className="h-64 flex items-center">
+              <Bar data={jobStatusBarData} options={barOptions} />
             </div>
           </div>
         </div>
@@ -272,7 +355,7 @@ const AdminDashboard = () => {
               <div className="flex justify-between items-center">
                 <div className="flex items-center">
                   <div className="p-2 rounded-full bg-green-100 text-green-600 mr-3">
-                    <FaCheck className="text-xl" />
+                    <FaBriefcase className="text-xl" />
                   </div>
                   <span className="text-gray-600">Active Jobs</span>
                 </div>
@@ -283,9 +366,9 @@ const AdminDashboard = () => {
                   <div className="p-2 rounded-full bg-yellow-100 text-yellow-600 mr-3">
                     <FaFileAlt className="text-xl" />
                   </div>
-                  <span className="text-gray-600">Pending Approvals</span>
+                  <span className="text-gray-600">Inactive Jobs</span>
                 </div>
-                <span className="text-xl font-semibold text-gray-900">{stats.pendingApprovals}</span>
+                <span className="text-xl font-semibold text-gray-900">{stats.inactiveJobs}</span>
               </div>
             </div>
           </div>
@@ -335,105 +418,6 @@ const AdminDashboard = () => {
               </div>
             </div>
           </button>
-        </div>
-
-        {/* Pending Approvals Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6">
-          <div className="p-6 border-b border-gray-200">
-            <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold text-teal-800">Pending Job Approvals</h3>
-              <div className="flex items-center space-x-4">
-                <select
-                  className="border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={filter}
-                  onChange={(e) => setFilter(e.target.value)}
-                >
-                  <option value="all">All Jobs</option>
-                  <option value="recent">Recent</option>
-                  <option value="oldest">Oldest</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                  <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                  <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted Date</th>
-                  <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {loading ? (
-                  <tr>
-                    <td colSpan="4" className="py-8 px-6 text-center">
-                      <div className="flex justify-center">
-                        <div className="w-8 h-8 border-4 border-teal-800 border-t-transparent rounded-full animate-spin"></div>
-                      </div>
-                    </td>
-                  </tr>
-                ) : filteredJobs.length === 0 ? (
-                  <tr>
-                    <td colSpan="4" className="py-8 px-6 text-center text-gray-600">
-                      No pending job approvals found.
-                    </td>
-                  </tr>
-                ) : (
-                  filteredJobs.map((job) => (
-                    <tr key={job._id} className="hover:bg-gray-50 transition-colors">
-                      <td className="py-4 px-6">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10">
-                            <img
-                              className="h-10 w-10 rounded-full"
-                              src={job.companyLogo || "https://via.placeholder.com/40"}
-                              alt={job.company}
-                            />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{job.company}</div>
-                            <div className="text-sm text-gray-500">{job.location}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="text-sm font-medium text-gray-900">{job.title}</div>
-                        <div className="text-sm text-gray-500">{job.type}</div>
-                      </td>
-                      <td className="py-4 px-6 text-sm text-gray-500">
-                        {new Date(job.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-4 px-6">
-                        <div className="flex space-x-3">
-                          <button
-                            onClick={() => navigate(`/description/${job._id}`)}
-                            className="text-teal-600 hover:text-teal-900 font-medium text-sm"
-                          >
-                            View
-                          </button>
-                          <button
-                            onClick={() => approveJob(job._id)}
-                            className="bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 transition flex items-center text-sm"
-                          >
-                            <MdCheckCircle className="mr-1" /> Approve
-                          </button>
-                          <button
-                            onClick={() => rejectJob(job._id)}
-                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition flex items-center text-sm"
-                          >
-                            <MdCancel className="mr-1" /> Reject
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       </main>
     </div>

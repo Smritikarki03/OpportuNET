@@ -5,35 +5,40 @@ import Header from '../Components/Header';
 import Footer from '../Components/Footer';
 
 const JobDescription = () => {
-  const { id } = useParams(); // Get the job ID from the URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
     const fetchJob = async () => {
       try {
+      setLoading(true);
         const response = await axios.get(`http://localhost:5000/api/jobs/${id}`);
         setJob(response.data);
-        setLoading(false);
+      setError(null);
       } catch (error) {
         console.error('Error fetching job:', error);
+      setError('Failed to load job details');
+    } finally {
         setLoading(false);
       }
     };
 
+  useEffect(() => {
     fetchJob();
   }, [id]);
 
   const handleApply = () => {
-    // Redirect to the apply page with the job ID
     navigate(`/Apply/${id}`);
   };
 
   if (loading) {
-
-    
     return <div className="text-center text-teal-700">Loading...</div>;
+  }
+
+  if (error) {
+    return <div className="text-center text-red-600">{error}</div>;
   }
 
   if (!job) {
@@ -68,10 +73,12 @@ const JobDescription = () => {
               <p><strong>Role:</strong> {job.title}</p>
               <p><strong>Location:</strong> {job.location}</p>
               <p><strong>Description:</strong> {job.description}</p>
+              <p><strong>Requirements:</strong> {job.requirements}</p>
               <p><strong>Experience:</strong> {job.experienceLevel}</p>
               <p><strong>Salary:</strong> {job.salary} Rs</p>
-              <p><strong>Total Applicants:</strong> {job.totalApplicants}</p>
-              <p><strong>Posted Date:</strong> {new Date(job.createdAt).toISOString().split('T')[0]}</p>
+              <p><strong>Total Applicants:</strong> {job.totalApplicants || 0}</p>
+              <p><strong>Posted Date:</strong> {new Date(job.createdAt).toLocaleDateString()}</p>
+              <p><strong>Application Deadline:</strong> {new Date(job.deadline).toLocaleDateString()}</p>
             </div>
           </div>
         </div>

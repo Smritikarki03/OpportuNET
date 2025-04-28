@@ -1,6 +1,7 @@
 const nodemailer = require("nodemailer");
 const User = require("../models/User");
 const Notification = require("../models/Notification");
+const Job = require('../models/Job');
 
 // Set up the email transporter
 const transporter = nodemailer.createTransport({
@@ -149,10 +150,25 @@ const getUserStats = async (req, res) => {
   }
 };
 
+// Get pending jobs for admin approval
+const getPendingJobs = async (req, res) => {
+  try {
+    const pendingJobs = await Job.find({ status: 'pending' })
+      .populate('userId', 'name email')
+      .sort({ createdAt: -1 });
+
+    res.status(200).json(pendingJobs);
+  } catch (error) {
+    console.error("Error fetching pending jobs:", error);
+    res.status(500).json({ message: "Error fetching pending jobs" });
+  }
+};
+
 // Explicitly export all functions
 module.exports = {
   adminApproveRejectEmployer,
   getNotifications,
   markNotificationAsRead,
-  getUserStats
+  getUserStats,
+  getPendingJobs
 };

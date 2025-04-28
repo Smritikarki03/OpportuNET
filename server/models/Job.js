@@ -46,6 +46,11 @@ const jobSchema = new mongoose.Schema({
     type: Date,
     required: true
   },
+  status: {
+    type: String,
+    enum: ['pending', 'Active', 'Inactive'],
+    default: 'pending'
+  },
   createdAt: {
     type: Date,
     default: Date.now

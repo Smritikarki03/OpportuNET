@@ -4,28 +4,37 @@ const Company = require('../models/Company');
 const User = require('../models/User');
 const Review = require('../models/Review');
 const { authenticate } = require('../middleware/authMiddleware');
-const multer = require('multer');
 const path = require('path');
+const upload = require('../middleware/upload');
 
-// Multer setup for logo uploads
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, path.join(__dirname, '../Uploads/'));
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  },
-});
+// Get all companies (this needs to be before parameterized routes)
+router.get('/all', async (req, res) => {
+  try {
+    // Fetch all companies from database with complete information
+    const companies = await Company.find()
+      .populate('userId', 'name email')
+      .select('name industry location establishedDate description logo employeeCount website createdAt')
+      .sort({ createdAt: -1 });
 
-const upload = multer({
-  storage,
-  fileFilter: (req, file, cb) => {
-    if (file.mimetype === 'image/jpeg' || file.mimetype === 'image/png') {
-      cb(null, true);
-    } else {
-      cb(new Error('Only JPEG and PNG files are allowed'), false);
-    }
-  },
+    // Get reviews for each company
+    const companiesWithReviews = await Promise.all(companies.map(async (company) => {
+      const reviews = await Review.find({ companyId: company._id });
+      const averageRating = reviews.length > 0
+        ? (reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length).toFixed(1)
+        : 0;
+
+      return {
+        ...company.toObject(),
+        averageRating: parseFloat(averageRating),
+        totalReviews: reviews.length
+      };
+    }));
+
+    res.json(companiesWithReviews);
+  } catch (err) {
+    console.error('Error fetching all companies:', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
 });
 
 // Create or update company profile
@@ -94,17 +103,27 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Get company profile by company ID (public)
-router.get('/:id', async (req, res) => {
+router.get('/:id', authenticate, async (req, res) => {
   try {
-    const company = await Company.findById(req.params.id).populate('userId', 'name email');
+    console.log('Fetching company with ID:', req.params.id);
+    console.log('Authenticated user:', req.user.id);
+
+    const company = await Company.findById(req.params.id);
     if (!company) {
       return res.status(404).json({ message: 'Company not found' });
     }
-    const user = await User.findById(company.userId);
-    if (user.role === 'employer' && !user.isApproved) {
-      return res.status(403).json({ message: 'Company profile not approved' });
-    }
-    res.json(company);
+
+    // Convert to plain object and ensure userId is a string
+    const companyData = company.toObject();
+    companyData.userId = company.userId.toString();
+
+    console.log('Sending company data:', {
+      companyId: companyData._id,
+      userId: companyData.userId,
+      requestUserId: req.user.id
+    });
+
+    res.json(companyData);
   } catch (err) {
     console.error('Error fetching company:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -114,37 +133,66 @@ router.get('/:id', async (req, res) => {
 // Update company profile by ID
 router.put('/:id', authenticate, upload.single('logo'), async (req, res) => {
   try {
-    const { name, industry, location, establishedDate, description, employeeCount, website } = req.body;
-    const userId = req.user.id;
+    console.log('Update request received:', {
+      userId: req.user.id,
+      companyId: req.params.id,
+      body: req.body
+    });
 
+    // Find the company
     const company = await Company.findById(req.params.id);
     if (!company) {
-      return res.status(404).json({ message: 'Company not found' });
-    }
-    if (company.userId.toString() !== userId && req.user.role !== 'admin') {
-      return res.status(403).json({ message: 'Unauthorized' });
+      return res.status(404).json({ message: 'Company profile not found' });
     }
 
-    const companyData = {
-      name: name || company.name,
-      industry: industry || company.industry,
-      location: location || company.location,
-      establishedDate: establishedDate ? new Date(establishedDate) : company.establishedDate,
-      description: description || company.description,
-      employeeCount: employeeCount ? parseInt(employeeCount) : company.employeeCount,
-      website: website || company.website,
+    // Check ownership
+    if (company.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'You are not authorized to update this company profile' });
+    }
+
+    // Prepare update data
+    const updateData = {
+      name: req.body.name,
+      industry: req.body.industry,
+      location: req.body.location,
+      establishedDate: req.body.establishedDate,
+      employeeCount: req.body.employeeCount,
+      website: req.body.website,
+      description: req.body.description
     };
 
     if (req.file) {
-      companyData.logo = `/Uploads/${req.file.filename}`;
+      updateData.logo = `/Uploads/${req.file.filename}`;
     }
 
-    Object.assign(company, companyData);
-    await company.save();
-    res.json({ message: 'Company profile updated', company });
-  } catch (err) {
-    console.error('Error updating company:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.log('Updating company with data:', updateData);
+
+    // Update the company with new: true to return the updated document
+    const updatedCompany = await Company.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCompany) {
+      return res.status(404).json({ message: 'Company not found after update' });
+    }
+
+    console.log('Company updated successfully:', updatedCompany);
+
+    // Return the updated company data
+    res.json({
+      success: true,
+      message: 'Company profile updated successfully',
+      company: updatedCompany
+    });
+  } catch (error) {
+    console.error('Error updating company:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error updating company profile',
+      error: error.message
+    });
   }
 });
 
@@ -210,7 +258,16 @@ router.get('/reviews/:companyId', async (req, res) => {
     const reviews = await Review.find({ companyId: req.params.companyId })
       .populate('userId', 'name')
       .sort({ createdAt: -1 });
-    res.json(reviews);
+
+    // Calculate average rating
+    const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
+    const averageRating = reviews.length > 0 ? (totalRating / reviews.length).toFixed(1) : 0;
+
+    res.json({
+      reviews,
+      averageRating,
+      totalReviews: reviews.length
+    });
   } catch (err) {
     console.error('Error fetching reviews:', err);
     res.status(500).json({ message: 'Server error', error: err.message });

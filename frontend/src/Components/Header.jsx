@@ -1,6 +1,7 @@
 // src/components/Header.jsx
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 
 const Header = () => {
   const [dropdownVisible, setDropdownVisible] = useState(false);
@@ -23,6 +24,11 @@ const Header = () => {
         setUserName(storedUserName);
         setUserRole(storedUserRole || "");
         setUserId(storedUserId || null);
+        console.log("Auth Data:", {
+          userName: storedUserName,
+          userRole: storedUserRole,
+          userId: storedUserId
+        });
       } else {
         setIsLoggedIn(false);
         setUserName("");
@@ -31,23 +37,81 @@ const Header = () => {
       }
     };
 
-    const fetchCompanyData = () => {
-      const profiles = JSON.parse(localStorage.getItem("companyProfiles")) || [];
-      if (profiles.length > 0 && userId) {
-        // Fetch company created by this user (for "My Company Profile")
-        const userProfile = profiles.find(profile => profile.createdBy === userId);
-        if (userProfile) {
-          setUserCompanyId(userProfile.id);
+    const fetchCompanyData = async () => {
+      try {
+        const storedAuth = localStorage.getItem("auth");
+        if (!storedAuth) return;
+
+        const { token } = JSON.parse(storedAuth);
+        console.log("Fetching company data for user:", userId);
+        
+        // First try to get from localStorage
+        const profiles = JSON.parse(localStorage.getItem("companyProfiles")) || [];
+        const storedProfile = profiles.find(p => p.userId === userId);
+        
+        if (storedProfile) {
+          console.log("Found company in localStorage:", storedProfile);
+          setUserCompanyId(storedProfile._id);
+          return;
+        }
+
+        // If not in localStorage, fetch from API
+        const response = await axios.get(
+          `http://localhost:5000/api/company`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        console.log("API Response:", response.data);
+
+        if (response.data) {
+          const companyData = response.data;
+          setUserCompanyId(companyData._id);
+          
+          // Update localStorage
+          const updatedProfiles = [...profiles];
+          const existingProfileIndex = profiles.findIndex(p => p._id === companyData._id);
+          
+          if (existingProfileIndex !== -1) {
+            updatedProfiles[existingProfileIndex] = companyData;
+          } else {
+            updatedProfiles.push(companyData);
+          }
+          
+          localStorage.setItem("companyProfiles", JSON.stringify(updatedProfiles));
+          console.log("Updated company profiles in localStorage");
+        }
+      } catch (error) {
+        console.error("Error fetching company data:", error.response?.data || error);
+        // If API call fails, try to get from localStorage as fallback
+        const profiles = JSON.parse(localStorage.getItem("companyProfiles")) || [];
+        const storedProfile = profiles.find(p => p.userId === userId);
+        if (storedProfile) {
+          console.log("Fallback: Found company in localStorage:", storedProfile);
+          setUserCompanyId(storedProfile._id);
         }
       }
     };
 
     checkAuth();
-    fetchCompanyData();
+    if (userId && userRole === "employer") {
+      console.log("Employer detected, fetching company data");
+      fetchCompanyData();
+    }
 
-    window.addEventListener("storage", checkAuth);
-    return () => window.removeEventListener("storage", checkAuth);
-  }, [userId]);
+    const handleStorageChange = () => {
+      checkAuth();
+      if (userId && userRole === "employer") {
+        fetchCompanyData();
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [userId, userRole]);
 
   const handleLogout = () => {
     localStorage.removeItem("auth");
@@ -117,14 +181,24 @@ const Header = () => {
                     >
                       View Profile
                     </Link>
-                    {userRole === "employer" && userCompanyId && (
-                      <Link
-                        to={`/company-prof/${userCompanyId}`}
-                        className="block px-4 py-2 hover:bg-teal-100 rounded"
-                        onClick={() => setDropdownVisible(false)}
-                      >
-                        My Company Profile
-                      </Link>
+                    {userRole === "employer" && (
+                      userCompanyId ? (
+                        <Link
+                          to={`/company-prof/${userCompanyId}`}
+                          className="block px-4 py-2 hover:bg-teal-100 rounded"
+                          onClick={() => setDropdownVisible(false)}
+                        >
+                          My Company Profile
+                        </Link>
+                      ) : (
+                        <Link
+                          to="/create-company"
+                          className="block px-4 py-2 hover:bg-teal-100 rounded"
+                          onClick={() => setDropdownVisible(false)}
+                        >
+                          Create Company Profile
+                        </Link>
+                      )
                     )}
                     <button
                       onClick={handleLogout}

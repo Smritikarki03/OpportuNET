@@ -28,6 +28,8 @@ const JobPosting = () => {
     experienceLevel: '',
     noOfPositions: 0,
     company: '',
+    deadline: '',
+    status: 'Active'
   });
 
   // Fetch employer data when component mounts
@@ -39,22 +41,36 @@ const JobPosting = () => {
           return;
         }
 
-        const response = await axios.get('http://localhost:5000/api/auth/userInfo', {
+        // First get the user's company ID
+        const userResponse = await axios.get('http://localhost:5000/api/auth/userInfo', {
           headers: {
             Authorization: `Bearer ${auth.token}`
           }
         });
 
-        console.log('Fetched employer data:', response.data);
-        setEmployerData(response.data);
-        // Pre-fill the company name
+        // Then fetch the company details
+        const companyResponse = await axios.get(`http://localhost:5000/api/company`, {
+          headers: {
+            Authorization: `Bearer ${auth.token}`
+          }
+        });
+
+        console.log('Fetched company data:', companyResponse.data);
+        setEmployerData(companyResponse.data);
+        
+        // Pre-fill the company name from the company profile
         setJob(prev => ({
           ...prev,
-          company: response.data.companyName || ''
+          company: companyResponse.data.name || ''
         }));
       } catch (error) {
         console.error('Error fetching employer data:', error);
-        alert('Error loading your profile data. Please try again.');
+        if (error.response?.status === 404) {
+          alert('Please set up your company profile before posting a job.');
+          navigate('/CompanySetupForm');
+        } else {
+          alert('Error loading your profile data. Please try again.');
+        }
       }
     };
 
@@ -75,16 +91,31 @@ const JobPosting = () => {
     }
 
     // Validate company name matches employer's company
-    if (job.company !== employerData?.companyName) {
+    if (job.company !== employerData?.name) {
       alert('Please use your registered company name');
       return;
     }
 
+    // Validate deadline
+    if (!job.deadline) {
+      alert('Please select an application deadline');
+      return;
+    }
+
     try {
-      console.log('Submitting job with data:', job);
+      // Format the data before sending
+      const formattedJob = {
+        ...job,
+        deadline: new Date(job.deadline + 'T23:59:59').toISOString(), // Set deadline to end of day
+        noOfPositions: parseInt(job.noOfPositions),
+        status: 'Active',
+        isActive: true
+      };
+
+      console.log('Submitting job with data:', formattedJob);
       const response = await axios.post(
         'http://localhost:5000/api/jobs',
-        job,
+        formattedJob,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -96,21 +127,17 @@ const JobPosting = () => {
       console.log('Job posting response:', response.data);
       alert('Job posted successfully!');
       
-      // Navigate to the correct employer profile page
-      navigate('/EmployerProfile', { 
+      // Redirect to home page instead of employer profile
+      navigate('/', { 
         state: { 
           refresh: true,
           timestamp: new Date().getTime() 
         } 
       });
     } catch (error) {
-      console.error('Error details:', error.response || error);
-      if (error.response?.status === 401) {
-        alert('Your session has expired. Please log in again.');
-        navigate('/login');
-      } else {
-        alert('Failed to post job: ' + (error.response?.data?.message || error.message));
-      }
+      console.error('Error details:', error.response?.data || error);
+      const errorMessage = error.response?.data?.message || error.message;
+      alert('Failed to post job: ' + errorMessage);
     }
   };
 
@@ -239,6 +266,22 @@ const JobPosting = () => {
             style={{...styles.input, backgroundColor: '#f0f0f0'}}
           />
           <small style={{color: '#666'}}>This is automatically filled with your registered company name</small>
+        </div>
+
+        <div style={styles.row}>
+          <div style={styles.inputGroup}>
+            <label style={styles.label}>Application Deadline</label>
+            <input
+              type="date"
+              name="deadline"
+              value={job.deadline}
+              onChange={handleChange}
+              required
+              min={new Date().toISOString().split('T')[0]}
+              style={styles.input}
+            />
+            <small style={{color: '#666'}}>Select the last date for applications</small>
+          </div>
         </div>
 
         <button type="submit" style={styles.button}>Post New Job</button>

@@ -209,10 +209,10 @@ const EmployerProfile = () => {
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-semibold text-teal-700">Posted Jobs</h2>
             <Link
-              to="/JobPost"
-              className="bg-teal-600 text-white py-2 px-4 rounded-lg hover:bg-teal-700 transition-colors text-sm"
+              to="/post-job"
+              className="bg-teal-600 text-white px-4 py-2 rounded-md hover:bg-teal-700"
             >
-              + Post New Job
+              Post a Job
             </Link>
           </div>
 

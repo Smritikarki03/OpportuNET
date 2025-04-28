@@ -1,36 +1,43 @@
 const jwt = require('jsonwebtoken');
-const userModel = require('../models/User');
+const User = require('../models/User');
 
 // Middleware to authenticate user
 const authenticate = async (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access denied. No token provided.' });
-  }
-
   try {
-    // Verify the token
+    console.log('Auth Middleware - Headers:', req.headers);
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+
+    if (!token) {
+      console.log('Auth Middleware - No token provided');
+      return res.status(401).json({ message: 'Access denied. No token provided.' });
+    }
+
+    console.log('Auth Middleware - Token received:', token.substring(0, 20) + '...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded.id) {
-      return res.status(400).json({ message: 'Invalid token: Missing user ID.' });
-    }
+    console.log('Auth Middleware - Decoded token:', decoded);
 
-    // Check if the user exists in the database
-    const user = await userModel.findById(decoded.id);
+    const user = await User.findById(decoded.id);
+    console.log('Auth Middleware - User found:', {
+      id: user?._id,
+      role: user?.role,
+      email: user?.email
+    });
+
     if (!user) {
-      return res.status(404).json({ message: 'User ID not found. Please log in again.' });
+      console.log('Auth Middleware - User not found');
+      return res.status(401).json({ message: 'User not found' });
     }
 
-    // Attach user info to the request
-    req.user = { id: decoded.id, role: user.role }; // Include role for role-based checks
+    // Store the complete user object
+    req.user = user;
+    console.log('Auth Middleware - User set on request:', {
+      id: req.user._id,
+      role: req.user.role
+    });
     next();
   } catch (error) {
-    console.error('Authentication error:', error.message);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token has expired. Please log in again.' });
-    }
-    return res.status(400).json({ message: 'Invalid token.' });
+    console.error('Authentication error:', error);
+    res.status(401).json({ message: 'Invalid token' });
   }
 };
 
@@ -45,35 +52,35 @@ const assignEmployerRole = (req, res, next) => {
 
 // Middleware to authenticate admin and verify role
 const authenticateAdmin = async (req, res, next) => {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access denied. No token provided.' });
-  }
-
   try {
+    // Get token from header
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ message: 'No token, authorization denied' });
+    }
+
+    // Verify token
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    if (!decoded.id) {
-      return res.status(400).json({ message: 'Invalid token: Missing user ID.' });
-    }
-
-    const user = await userModel.findById(decoded.id);
+    
+    // Get user from database
+    const user = await User.findById(decoded.id).select('-password');
+    
     if (!user) {
-      return res.status(401).json({ message: 'Authentication failed. User not found.' });
+      return res.status(401).json({ message: 'User not found' });
     }
 
-    if (user.role !== 'admin') {
-      return res.status(403).json({ message: 'You are not authorized to access this route.' });
+    // Check if user is admin
+    if (user.role.toLowerCase() !== 'admin') {
+      return res.status(403).json({ message: 'Access denied. Admin only.' });
     }
 
-    req.user = { id: decoded.id, role: user.role };
+    // Add user to request
+    req.user = user;
     next();
   } catch (error) {
-    console.error('Admin authentication error:', error.message);
-    if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token has expired. Please log in again.' });
-    }
-    return res.status(401).json({ message: 'Authentication failed. Invalid token.' });
+    console.error('Auth middleware error:', error);
+    res.status(401).json({ message: 'Token is not valid' });
   }
 };
 

@@ -163,7 +163,17 @@ const EditJob = () => {
       }
 
       console.log('Update response:', response.data);
-      navigate('/profile');
+      
+      // Show success message
+      alert('Job updated successfully!');
+      
+      // Navigate to profile page
+      navigate('/profile', { 
+        state: { 
+          updateMessage: 'Job updated successfully',
+          refresh: true 
+        } 
+      });
     } catch (error) {
       console.error('Error updating job:', error.response || error);
       const errorMessage = error.response?.data?.message || error.message || 'Failed to update job';
