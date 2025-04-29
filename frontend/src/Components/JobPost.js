@@ -41,14 +41,12 @@ const JobPosting = () => {
           return;
         }
 
-        // First get the user's company ID
         const userResponse = await axios.get('http://localhost:5000/api/auth/userInfo', {
           headers: {
             Authorization: `Bearer ${auth.token}`
           }
         });
 
-        // Then fetch the company details
         const companyResponse = await axios.get(`http://localhost:5000/api/company`, {
           headers: {
             Authorization: `Bearer ${auth.token}`
@@ -58,7 +56,6 @@ const JobPosting = () => {
         console.log('Fetched company data:', companyResponse.data);
         setEmployerData(companyResponse.data);
         
-        // Pre-fill the company name from the company profile
         setJob(prev => ({
           ...prev,
           company: companyResponse.data.name || ''
@@ -90,23 +87,20 @@ const JobPosting = () => {
       return;
     }
 
-    // Validate company name matches employer's company
     if (job.company !== employerData?.name) {
       alert('Please use your registered company name');
       return;
     }
 
-    // Validate deadline
     if (!job.deadline) {
       alert('Please select an application deadline');
       return;
     }
 
     try {
-      // Format the data before sending
       const formattedJob = {
         ...job,
-        deadline: new Date(job.deadline + 'T23:59:59').toISOString(), // Set deadline to end of day
+        deadline: new Date(job.deadline + 'T23:59:59').toISOString(),
         noOfPositions: parseInt(job.noOfPositions),
         status: 'Active',
         isActive: true
@@ -127,7 +121,6 @@ const JobPosting = () => {
       console.log('Job posting response:', response.data);
       alert('Job posted successfully!');
       
-      // Redirect to home page instead of employer profile
       navigate('/', { 
         state: { 
           refresh: true,
@@ -142,209 +135,189 @@ const JobPosting = () => {
   };
 
   return (
-    <div style={styles.container}>
-      <h2 style={styles.header}>Post a Job on opportuNET</h2>
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.row}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Title</label>
-            <input
-              type="text"
-              name="title"
-              value={job.title}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Description</label>
-            <textarea
-              name="description"
-              value={job.description}
-              onChange={handleChange}
-              required
-              style={styles.textarea}
-            />
+    <>
+      <Header />
+      <br />
+      <br />
+      <br />
+      <br />
+      <br />
+      
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
+            <div className="text-center mb-8">
+              <h2 className="text-3xl font-bold text-gray-900">Post a New Job</h2>
+              <p className="mt-2 text-sm text-gray-600">Fill in the details below to create a new job posting</p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Job Title and Type */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Title</label>
+                  <input
+                    type="text"
+                    name="title"
+                    value={job.title}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="e.g. Senior Software Engineer"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
+                  <select
+                    name="jobType"
+                    value={job.jobType}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="">Select Job Type</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Internship">Internship</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Description and Requirements */}
+              <div className="space-y-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Job Description</label>
+                  <textarea
+                    name="description"
+                    value={job.description}
+                    onChange={handleChange}
+                    required
+                    rows="4"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="Describe the role and responsibilities"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Requirements</label>
+                  <textarea
+                    name="requirements"
+                    value={job.requirements}
+                    onChange={handleChange}
+                    required
+                    rows="4"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="List the required skills and qualifications"
+                  />
+                </div>
+              </div>
+
+              {/* Salary and Location */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Salary</label>
+                  <input
+                    type="text"
+                    name="salary"
+                    value={job.salary}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="e.g. $50,000 - $70,000"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+                  <input
+                    type="text"
+                    name="location"
+                    value={job.location}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                    placeholder="e.g. New York, NY"
+                  />
+                </div>
+              </div>
+
+              {/* Experience and Positions */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Experience Level</label>
+                  <select
+                    name="experienceLevel"
+                    value={job.experienceLevel}
+                    onChange={handleChange}
+                    required
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  >
+                    <option value="">Select Experience Level</option>
+                    <option value="Entry Level">Entry Level</option>
+                    <option value="Mid Level">Mid Level</option>
+                    <option value="Senior Level">Senior Level</option>
+                    <option value="Executive">Executive</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Number of Positions</label>
+                  <input
+                    type="number"
+                    name="noOfPositions"
+                    value={job.noOfPositions}
+                    onChange={handleChange}
+                    required
+                    min="1"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+
+              {/* Company and Deadline */}
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <input
+                    type="text"
+                    name="company"
+                    value={job.company}
+                    onChange={handleChange}
+                    required
+                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm bg-gray-50 cursor-not-allowed"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">Auto-filled with your company name</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
+                  <input
+                    type="date"
+                    name="deadline"
+                    value={job.deadline}
+                    onChange={handleChange}
+                    required
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-sm text-gray-500">Last date for applications</p>
+                </div>
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-4">
+                <button
+                  type="submit"
+                  className="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500 transition-colors duration-200"
+                >
+                  Post Job
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-
-        <div style={styles.row}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Requirements</label>
-            <textarea
-              name="requirements"
-              value={job.requirements}
-              onChange={handleChange}
-              required
-              style={styles.textarea}
-            />
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Salary</label>
-            <input
-              type="text"
-              name="salary"
-              value={job.salary}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </div>
-        </div>
-
-        <div style={styles.row}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Location</label>
-            <input
-              type="text"
-              name="location"
-              value={job.location}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            />
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Job Type</label>
-            <select
-              name="jobType"
-              value={job.jobType}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            >
-              <option value="">Select Job Type</option>
-              <option value="Full-time">Full-time</option>
-              <option value="Part-time">Part-time</option>
-              <option value="Contract">Contract</option>
-              <option value="Internship">Internship</option>
-            </select>
-          </div>
-        </div>
-
-        <div style={styles.row}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Experience Level</label>
-            <select
-              name="experienceLevel"
-              value={job.experienceLevel}
-              onChange={handleChange}
-              required
-              style={styles.input}
-            >
-              <option value="">Select Experience Level</option>
-              <option value="Entry Level">Entry Level</option>
-              <option value="Mid Level">Mid Level</option>
-              <option value="Senior Level">Senior Level</option>
-              <option value="Executive">Executive</option>
-            </select>
-          </div>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>No of Position</label>
-            <input
-              type="number"
-              name="noOfPositions"
-              value={job.noOfPositions}
-              onChange={handleChange}
-              required
-              min="1"
-              style={styles.input}
-            />
-          </div>
-        </div>
-
-        <div style={styles.inputGroup}>
-          <label style={styles.label}>Company Name</label>
-          <input
-            type="text"
-            name="company"
-            value={job.company}
-            onChange={handleChange}
-            required
-            disabled
-            style={{...styles.input, backgroundColor: '#f0f0f0'}}
-          />
-          <small style={{color: '#666'}}>This is automatically filled with your registered company name</small>
-        </div>
-
-        <div style={styles.row}>
-          <div style={styles.inputGroup}>
-            <label style={styles.label}>Application Deadline</label>
-            <input
-              type="date"
-              name="deadline"
-              value={job.deadline}
-              onChange={handleChange}
-              required
-              min={new Date().toISOString().split('T')[0]}
-              style={styles.input}
-            />
-            <small style={{color: '#666'}}>Select the last date for applications</small>
-          </div>
-        </div>
-
-        <button type="submit" style={styles.button}>Post New Job</button>
-      </form>
-    </div>
+      </div>
+      <Footer />
+    </>
   );
-};
-
-// Inline styles (same as before)
-const styles = {
-  container: {
-    maxWidth: '600px',
-    margin: '0 auto',
-    padding: '20px',
-    backgroundColor: '#f9f9f9',
-    borderRadius: '8px',
-    boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-  },
-  header: {
-    textAlign: 'center',
-    marginBottom: '20px',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '15px',
-  },
-  row: {
-    display: 'flex',
-    gap: '15px',
-  },
-  inputGroup: {
-    flex: 1,
-  },
-  label: {
-    display: 'block',
-    marginBottom: '5px',
-    fontWeight: 'bold',
-  },
-  input: {
-    width: '100%',
-    padding: '8px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    boxSizing: 'border-box',
-  },
-  textarea: {
-    width: '100%',
-    padding: '8px',
-    border: '1px solid #ccc',
-    borderRadius: '4px',
-    boxSizing: 'border-box',
-    minHeight: '80px',
-  },
-  button: {
-    padding: '10px',
-    backgroundColor: 'teal',
-    color: '#fff',
-    border: 'none',
-    borderRadius: '4px',
-    cursor: 'pointer',
-    fontSize: '16px',
-  },
 };
 
 export default JobPosting;

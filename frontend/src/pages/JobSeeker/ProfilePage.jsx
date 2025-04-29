@@ -26,7 +26,8 @@ const ProfilePage = () => {
         return;
       }
 
-      const response = await fetch("http://localhost:5000/api/auth/userInfo", {
+      // Fetch user info
+      const userResponse = await fetch("http://localhost:5000/api/auth/userInfo", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`,
@@ -34,36 +35,47 @@ const ProfilePage = () => {
         },
       });
 
-      const result = await response.json();
-      console.log("User data from server:", result);
+      const userData = await userResponse.json();
 
-      if (response.ok) {
-        // Include ID from auth context
-        const userData = {
-          ...result,
-          _id: auth?.user?.id || auth?.user?._id || result._id || result.id
+      if (userResponse.ok) {
+        const processedUser = {
+          ...userData,
+          _id: auth?.user?.id || auth?.user?._id || userData._id || userData.id
         };
-        console.log("Processed user data with auth ID:", userData);
-        setUser(userData);
-        
-        // Set posted jobs from user data if user is an employer
-        if (userData.role === 'employer' && userData.postedJobs) {
-          setPostedJobs(userData.postedJobs);
+
+        // If user is an employer, fetch their posted jobs
+        if (processedUser.role === 'employer') {
+          const jobsResponse = await fetch("http://localhost:5000/api/jobs", {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${auth.token}`,
+            },
+          });
+
+          if (jobsResponse.ok) {
+            const jobsData = await jobsResponse.json();
+            console.log("Fetched jobs data:", jobsData);
+            setPostedJobs(jobsData);
+          } else {
+            console.error("Failed to fetch jobs:", await jobsResponse.text());
+          }
         }
         
-        localStorage.setItem("user", JSON.stringify(userData));
+        setUser(processedUser);
+        localStorage.setItem("user", JSON.stringify(processedUser));
 
         let isProfileIncomplete = false;
-        if (userData.role === "jobseeker") {
-          isProfileIncomplete = !userData.name || !userData.skills?.length || !userData.resume;
-        } else if (userData.role === "employer") {
-          isProfileIncomplete = !userData.name || !userData.skills?.length || !userData.resume;
+        if (processedUser.role === "jobseeker") {
+          isProfileIncomplete = !processedUser.name || !processedUser.skills?.length || !processedUser.resume;
+        } else if (processedUser.role === "employer") {
+          isProfileIncomplete = !processedUser.name || !processedUser.skills?.length || !processedUser.resume;
         }
         setShowPopup(isProfileIncomplete);
       } else {
-        setError(result.message || "Failed to load user data.");
+        setError(userData.message || "Failed to load user data.");
       }
     } catch (error) {
+      console.error("Error in fetchUserData:", error);
       setError("Network error. Please check your connection and try again.");
     } finally {
       setIsLoading(false);
@@ -451,67 +463,75 @@ const ProfilePage = () => {
                 <thead>
                   <tr className="text-gray-600 border-b">
                     <th className="py-2 px-4">Name</th>
-                    <th className="py-2 px-4">Job Role</th>
-                    <th className="py-2 px-4">CV</th>
+                    <th className="py-2 px-4">Job Title</th>
+                    <th className="py-2 px-4">Applied Date</th>
+                    <th className="py-2 px-4">Resume</th>
                     <th className="py-2 px-4">Status</th>
                     <th className="py-2 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {user.jobApplicants?.length > 0 ? (
-                    user.jobApplicants.map((applicant, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-4">{applicant.name || "N/A"}</td>
-                        <td className="py-2 px-4">{applicant.jobRole || "N/A"}</td>
-                        <td className="py-2 px-4">
-                          {applicant.cv ? (
-                            <a
-                              href={`http://localhost:5000${applicant.cv}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-teal-600 hover:underline"
+                  {postedJobs.some(job => job.applications?.length > 0) ? (
+                    postedJobs.map(job => 
+                      job.applications?.map((application, index) => (
+                        <tr key={`${job._id}-${index}`} className="border-b hover:bg-gray-50">
+                          <td className="py-2 px-4">{application.applicantName}</td>
+                          <td className="py-2 px-4">{job.title}</td>
+                          <td className="py-2 px-4">
+                            {new Date(application.appliedDate).toLocaleDateString()}
+                          </td>
+                          <td className="py-2 px-4">
+                            {application.resume ? (
+                              <a
+                                href={`http://localhost:5000${application.resume}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-teal-600 hover:underline"
+                              >
+                                View Resume
+                              </a>
+                            ) : (
+                              "No Resume"
+                            )}
+                          </td>
+                          <td className="py-2 px-4">
+                            <span
+                              className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
+                                application.status === "PENDING"
+                                  ? "bg-yellow-100 text-yellow-800"
+                                  : application.status === "ACCEPTED"
+                                  ? "bg-green-100 text-green-800"
+                                  : "bg-red-100 text-red-800"
+                              }`}
                             >
-                              View CV
-                            </a>
-                          ) : (
-                            "No CV"
-                          )}
-                        </td>
-                        <td className="py-2 px-4">
-                          <span
-                            className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                              applicant.status === "PENDING"
-                                ? "bg-gray-200 text-gray-800"
-                                : applicant.status === "ACCEPTED"
-                                ? "bg-green-200 text-green-800"
-                                : "bg-red-200 text-red-800"
-                            }`}
-                          >
-                            {applicant.status || "N/A"}
-                          </span>
-                        </td>
-                        <td className="py-2 px-4 flex space-x-2">
-                          <button
-                            onClick={() => handleAccept(applicant.id)}
-                            className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
-                            disabled={applicant.status !== "PENDING"}
-                          >
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleReject(applicant.id)}
-                            className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600"
-                            disabled={applicant.status !== "PENDING"}
-                          >
-                            Reject
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                              {application.status}
+                            </span>
+                          </td>
+                          <td className="py-2 px-4">
+                            {application.status === "PENDING" && (
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleAccept(application._id)}
+                                  className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm"
+                                >
+                                  Accept
+                                </button>
+                                <button
+                                  onClick={() => handleReject(application._id)}
+                                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
+                                >
+                                  Reject
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )
                   ) : (
                     <tr>
-                      <td colSpan="5" className="py-2 px-4 text-gray-500">
-                        No applicants yet.
+                      <td colSpan="6" className="py-4 px-4 text-center text-gray-500">
+                        No applications received yet.
                       </td>
                     </tr>
                   )}

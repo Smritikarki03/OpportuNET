@@ -12,7 +12,6 @@ const EditProfilePage = () => {
     name: user.name || "",
     phone: user.phone || "",
     skills: user.skills?.join(", ") || "",
-    bio: user.bio || "",
   });
 
   const [imageFile, setImageFile] = useState(null);
@@ -51,10 +50,6 @@ const EditProfilePage = () => {
       formDataToSend.append("phone", formData.phone);
       formDataToSend.append("skills", formData.skills);
 
-      if (user.role !== "employer") {
-        formDataToSend.append("bio", formData.bio);
-      }
-
       if (imageFile) formDataToSend.append("image", imageFile);
       if (cvFile) formDataToSend.append("cv", cvFile);
 
@@ -80,12 +75,8 @@ const EditProfilePage = () => {
           resume: result.user.resume || user.resume,
         };
 
-        if (user.role !== "employer") {
-          updatedUser.bio = formData.bio;
-        }
-
         localStorage.setItem("user", JSON.stringify(updatedUser));
-        navigate("/profile", { state: { updateMessage: "Profile updated successfully" } });
+        navigate("/profile", { state: { updatedUser: updatedUser } });
       } else {
         setError(result.message || "Failed to update profile.");
       }

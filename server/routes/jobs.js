@@ -111,7 +111,16 @@ router.get('/', authenticate, async (req, res) => {
 
     const jobs = await Job.find(query)
       .sort({ createdAt: -1 })
-      .populate('userId', 'name email');
+      .populate('userId', 'name email')
+      .populate({
+        path: 'applications',
+        select: 'applicantName resume status appliedDate'
+      });
+
+    // For employers, include application details
+    if (req.user.role.toLowerCase() === 'employer') {
+      console.log('Sending jobs with applications for employer:', req.user.id);
+    }
 
     res.json(jobs);
   } catch (error) {

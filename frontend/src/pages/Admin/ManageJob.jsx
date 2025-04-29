@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { FaSearch, FaEdit, FaTrash, FaEye, FaFilter, FaPlus } from "react-icons/fa";
+import { FaSearch, FaEdit, FaTrash, FaEye, FaFilter, FaPlus, FaBriefcase, FaCheck, FaTimes } from "react-icons/fa";
 import Sidebar from "../../Components/Sidebar";
 
 const ManageJob = () => {
@@ -195,194 +195,185 @@ const ManageJob = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col space-y-8">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-              <div className="space-y-2">
-                <h1 className="text-4xl font-bold text-gray-900">Manage Jobs</h1>
-                <p className="text-gray-500">View and manage all job listings in your organization</p>
-              </div>
-              <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
-                <div className="relative w-full sm:w-72">
-                  <input
-                    type="text"
-                    placeholder="Search jobs by title, company, or location..."
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 shadow-sm"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                  />
-                  <FaSearch className="absolute left-4 top-3.5 text-gray-400" />
+      
+      {/* Main Content */}
+      <main className="flex-1 ml-64 min-h-screen overflow-auto">
+        <div className="p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col space-y-8">
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-bold text-teal-800">Manage Jobs</h1>
+                  <p className="text-gray-600">View and manage all job listings</p>
                 </div>
-                <div className="relative w-full sm:w-56">
-                  <select
-                    className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent appearance-none bg-white shadow-sm"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                  >
-                    <option value="all">All Jobs</option>
-                    <option value="Active">Active</option>
-                    <option value="Inactive">Inactive</option>
-                    <option value="rejected">Rejected</option>
-                  </select>
-                  <FaFilter className="absolute left-4 top-3.5 text-gray-400" />
+                <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+                  <div className="relative w-full sm:w-72">
+                    <input
+                      type="text"
+                      placeholder="Search jobs..."
+                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <FaSearch className="absolute left-4 top-3.5 text-gray-400" />
+                  </div>
+                  <div className="relative w-full sm:w-48">
+                    <select
+                      className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 shadow-sm appearance-none bg-white"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    >
+                      <option value="all">All Jobs</option>
+                      <option value="Active">Active</option>
+                      <option value="Inactive">Inactive</option>
+                    </select>
+                    <FaFilter className="absolute left-4 top-3.5 text-gray-400" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Stats Section with updated colors */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Total Jobs</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">{jobs.length}</p>
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Total Jobs</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">{jobs.length}</p>
+                    </div>
+                    <div className="bg-teal-100 p-3 rounded-lg">
+                      <FaBriefcase className="w-6 h-6 text-teal-600" />
+                    </div>
                   </div>
-                  <div className="bg-indigo-50 p-3 rounded-lg">
-                    <FaPlus className="w-6 h-6 text-indigo-500" />
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Active Jobs</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {jobs.filter(job => job.status === 'Active').length}
+                      </p>
+                    </div>
+                    <div className="bg-emerald-100 p-3 rounded-lg">
+                      <FaCheck className="w-6 h-6 text-emerald-600" />
+                    </div>
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-500">Inactive Jobs</p>
+                      <p className="text-2xl font-bold text-gray-900 mt-1">
+                        {jobs.filter(job => job.status === 'Inactive').length}
+                      </p>
+                    </div>
+                    <div className="bg-gray-100 p-3 rounded-lg">
+                      <FaTimes className="w-6 h-6 text-gray-600" />
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Active Jobs</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {jobs.filter(job => job.status === 'Active').length}
-                    </p>
-                  </div>
-                  <div className="bg-emerald-50 p-3 rounded-lg">
-                    <div className="w-6 h-6 bg-emerald-500 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-              <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium text-gray-500">Inactive Jobs</p>
-                    <p className="text-2xl font-bold text-gray-900 mt-1">
-                      {jobs.filter(job => job.status === 'Inactive').length}
-                    </p>
-                  </div>
-                  <div className="bg-slate-50 p-3 rounded-lg">
-                    <div className="w-6 h-6 bg-slate-500 rounded-full"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Error Message */}
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <FaTimes className="h-5 w-5 text-red-500" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Jobs Table with updated status styling */}
-            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted Date</th>
-                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {loading ? (
+              {/* Jobs Table */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-gray-50">
                       <tr>
-                        <td colSpan="6" className="px-6 py-12 text-center">
-                          <div className="flex justify-center">
-                            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-                          </div>
-                        </td>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Company</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Job Title</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Location</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Posted Date</th>
+                        <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                       </tr>
-                    ) : filteredJobs.length === 0 ? (
-                      <tr>
-                        <td colSpan="6" className="px-6 py-12 text-center">
-                          <div className="flex flex-col items-center justify-center space-y-4">
-                            <div className="bg-gray-50 p-6 rounded-full">
-                              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                              </svg>
-                            </div>
-                            <div className="space-y-2">
-                              <p className="text-gray-500 text-lg font-medium">No jobs found</p>
-                              <p className="text-gray-400 text-sm">Try adjusting your search or filter criteria</p>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredJobs.map((job) => (
-                        <tr key={job._id} className="hover:bg-gray-50 transition-colors duration-150">
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="ml-2">
-                                <div className="text-sm font-medium text-gray-900">{job.company}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm font-medium text-gray-900">{job.title}</div>
-                            <div className="text-sm text-gray-500">{job.type}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="text-sm text-gray-900">{job.location}</div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusStyles(job.status)}`}>
-                              {getStatusIcon(job.status)}
-                              {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(job.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                            <div className="flex space-x-3">
-                              <button
-                                onClick={() => navigate(`/description/${job._id}`)}
-                                className="text-indigo-600 hover:text-indigo-900 transition-colors duration-200 p-2 hover:bg-indigo-50 rounded-lg"
-                                title="View Job"
-                              >
-                                <FaEye className="w-5 h-5" />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteJob(job._id)}
-                                className="text-rose-600 hover:text-rose-900 transition-colors duration-200 p-2 hover:bg-rose-50 rounded-lg"
-                                title="Delete Job"
-                              >
-                                <FaTrash className="w-5 h-5" />
-                              </button>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {loading ? (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-12 text-center">
+                            <div className="flex justify-center">
+                              <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
                             </div>
                           </td>
                         </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                      ) : filteredJobs.length === 0 ? (
+                        <tr>
+                          <td colSpan="6" className="px-6 py-12 text-center">
+                            <div className="text-gray-500 text-lg">No jobs found</div>
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredJobs.map((job) => (
+                          <tr key={job._id} className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="ml-2">
+                                  <div className="text-sm font-medium text-gray-900">{job.company}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm font-medium text-gray-900">{job.title}</div>
+                              <div className="text-sm text-gray-500">{job.type}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="text-sm text-gray-900">{job.location}</div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusStyles(job.status)}`}>
+                                {getStatusIcon(job.status)}
+                                {job.status.charAt(0).toUpperCase() + job.status.slice(1)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                              {new Date(job.createdAt).toLocaleDateString()}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <div className="flex space-x-3">
+                                <button
+                                  onClick={() => navigate(`/description/${job._id}`)}
+                                  className="text-indigo-600 hover:text-indigo-900 transition-colors duration-200 p-2 hover:bg-indigo-50 rounded-lg"
+                                  title="View Job"
+                                >
+                                  <FaEye className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteJob(job._id)}
+                                  className="text-rose-600 hover:text-rose-900 transition-colors duration-200 p-2 hover:bg-rose-50 rounded-lg"
+                                  title="Delete Job"
+                                >
+                                  <FaTrash className="w-5 h-5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 };

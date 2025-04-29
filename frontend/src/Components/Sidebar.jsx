@@ -10,72 +10,77 @@ const Sidebar = () => {
   };
 
   return (
-    <aside className="w-64 bg-teal-800 text-white p-6 shadow-lg">
-      <h2 className="text-xl font-semibold mb-8">Admin Panel</h2>
-      <ul>
-        <li className="mb-4">
-          <NavLink
-            to="/AdminDB"
-            className={({ isActive }) =>
-              `flex items-center p-3 rounded-lg transition-colors ${
-                isActive ? "bg-teal-700" : "hover:bg-teal-700"
-              }`
-            }
-          >
-            <FaTachometerAlt className="mr-3" />
-            Dashboard
-          </NavLink>
-        </li>
-        <li className="mb-4">
-          <NavLink
-            to="/ManageJob"
-            className={({ isActive }) =>
-              `flex items-center p-3 rounded-lg transition-colors ${
-                isActive ? "bg-teal-700" : "hover:bg-teal-700"
-              }`
-            }
-          >
-            <FaBriefcase className="mr-3" />
-            Manage Jobs
-          </NavLink>
-        </li>
-        <li className="mb-4">
-          <NavLink
-            to="/ManageUsers"
-            className={({ isActive }) =>
-              `flex items-center p-3 rounded-lg transition-colors ${
-                isActive ? "bg-teal-700" : "hover:bg-teal-700"
-              }`
-            }
-          >
-            <FaUsers className="mr-3" />
-            User Management
-          </NavLink>
-        </li>
-        <li className="mb-4">
-          <NavLink
-            to="/reviews"
-            className={({ isActive }) =>
-              `flex items-center p-3 rounded-lg transition-colors ${
-                isActive ? "bg-teal-700" : "hover:bg-teal-700"
-              }`
-            }
-          >
-            <FaFileAlt className="mr-3" />
-            Reviews
-          </NavLink>
-        </li>
-        {/* Logout Button */}
-        <li className="mb-4">
-          <button
-            onClick={handleLogout}
-            className="flex items-center p-3 rounded-lg transition-colors w-full text-left hover:bg-teal-700"
-          >
-            <FaSignOutAlt className="mr-3" />
-            Logout
-          </button>
-        </li>
-      </ul>
+    <aside className="fixed top-0 left-0 h-screen w-64 bg-teal-800 text-white shadow-xl flex flex-col z-50">
+      {/* Logo/Title */}
+      <div className="flex items-center justify-center h-24 border-b border-teal-900">
+        <span className="text-2xl font-bold tracking-wide">OpportuNET</span>
+      </div>
+      <nav className="flex-1 overflow-y-auto py-8">
+        <ul className="space-y-4">
+          <li>
+            <NavLink
+              to="/AdminDB"
+              className={({ isActive }) =>
+                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                }`
+              }
+            >
+              <FaTachometerAlt className="h-6 w-6" />
+              Dashboard
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/ManageJob"
+              className={({ isActive }) =>
+                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                }`
+              }
+            >
+              <FaBriefcase className="h-6 w-6" />
+              Manage Jobs
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/ManageUsers"
+              className={({ isActive }) =>
+                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                }`
+              }
+            >
+              <FaUsers className="h-6 w-6" />
+              User Management
+            </NavLink>
+          </li>
+          <li>
+            <NavLink
+              to="/reviews"
+              className={({ isActive }) =>
+                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                }`
+              }
+            >
+              <FaFileAlt className="h-6 w-6" />
+              Reviews
+            </NavLink>
+          </li>
+        </ul>
+      </nav>
+      {/* Logout Button */}
+      <div className="p-6 border-t border-teal-900">
+        <button
+          onClick={handleLogout}
+          className="flex items-center w-full px-6 py-4 rounded-lg bg-teal-700 hover:bg-teal-600 transition-colors font-medium text-lg gap-4"
+        >
+          <FaSignOutAlt className="h-6 w-6" />
+          Logout
+        </button>
+      </div>
     </aside>
   );
 };

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth";
-import { FaSearch, FaTrash, FaEye, FaFilter, FaUser, FaBuilding, FaCheck, FaTimes, FaEnvelope, FaPhone, FaCalendar, FaMapMarkerAlt, FaBriefcase, FaUniversity, FaFile, FaInfo, FaDownload, FaUserCheck } from "react-icons/fa";
+import { FaSearch, FaTrash, FaEye, FaFilter, FaUser, FaBuilding, FaCheck, FaTimes, FaEnvelope, FaPhone, FaCalendar, FaMapMarkerAlt, FaBriefcase, FaUniversity, FaFile, FaInfo, FaDownload, FaUserCheck, FaUsers, FaGlobe, FaStar } from "react-icons/fa";
 import Sidebar from "../../Components/Sidebar";
 
 const ManageUsers = () => {
@@ -17,6 +17,10 @@ const ManageUsers = () => {
   const [resumeUrl, setResumeUrl] = useState(null);
   const [resumeError, setResumeError] = useState(null);
   const [auth] = useAuth();
+  const [isCompanyModalOpen, setIsCompanyModalOpen] = useState(false);
+  const [companyProfile, setCompanyProfile] = useState(null);
+  const [companyLoading, setCompanyLoading] = useState(false);
+  const [companyError, setCompanyError] = useState(null);
 
   const navigate = useNavigate();
 
@@ -205,6 +209,47 @@ const ManageUsers = () => {
     }
   };
 
+  const handleViewCompany = async (user) => {
+    setCompanyProfile(null);
+    setCompanyError(null);
+    setCompanyLoading(true);
+    setIsCompanyModalOpen(true);
+    try {
+      // First check if we have the companyId
+      if (!user.companyId) {
+        throw new Error('No company ID found for this user');
+      }
+
+      // Fetch company using companyId
+      const response = await fetch(`http://localhost:5000/api/company/${user.companyId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${auth.token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch company profile');
+      }
+
+      const data = await response.json();
+      console.log('Company data:', data); // Debug log
+      setCompanyProfile(data);
+    } catch (error) {
+      console.error('Error fetching company:', error);
+      setCompanyError(error.message || 'Failed to load company profile');
+    } finally {
+      setCompanyLoading(false);
+    }
+  };
+
+  const closeCompanyModal = () => {
+    setIsCompanyModalOpen(false);
+    setCompanyProfile(null);
+    setCompanyError(null);
+  };
+
   const filteredUsers = users.filter(user => {
     const matchesSearch = 
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -229,180 +274,201 @@ const ManageUsers = () => {
     return { isComplete: true, message: 'Complete' }; // For employers
   };
 
+  // Update the visibility check to use companyId
+  const hasCompanyProfile = (user) => {
+    return user && user.companyId;
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      <div className="flex-1 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col space-y-6">
-            {/* Header Section */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">Manage Users</h1>
-                <p className="text-gray-500 mt-1">View and manage all registered users</p>
+      
+      {/* Main Content */}
+      <main className="flex-1 ml-64 min-h-screen overflow-auto">
+        <div className="p-8">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-col space-y-6">
+              {/* Header Section */}
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+                <div>
+                  <h1 className="text-3xl font-bold text-teal-800">Manage Users</h1>
+                  <p className="text-gray-600">View and manage all registered users</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                  <div className="relative flex-grow sm:flex-grow-0">
+                    <input
+                      type="text"
+                      placeholder="Search users..."
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                    <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
+                  </div>
+                  <div className="relative">
+                    <select
+                      className="appearance-none pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-white"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                    >
+                      <option value="all">All Users</option>
+                      <option value="jobseeker">Job Seekers</option>
+                      <option value="employer">Employers</option>
+                    </select>
+                    <FaFilter className="absolute left-3 top-3.5 text-gray-400" />
+                  </div>
+                </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                <div className="relative flex-grow sm:flex-grow-0">
-              <input
-                type="text"
-                    placeholder="Search users..."
-                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-                  <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
-            </div>
-                <div className="relative">
-            <select
-                    className="appearance-none pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-white"
-              value={filter}
-              onChange={(e) => setFilter(e.target.value)}
-            >
-              <option value="all">All Users</option>
-              <option value="jobseeker">Job Seekers</option>
-              <option value="employer">Employers</option>
-            </select>
-                  <FaFilter className="absolute left-3 top-3.5 text-gray-400" />
-                  <div className="absolute right-3 top-3.5 pointer-events-none">
-                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                </div>
-          </div>
-        </div>
 
-            {/* Error Message */}
-        {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <FaTimes className="h-5 w-5 text-red-500" />
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-          </div>
-        )}
-
-            {/* Users Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="col-span-full flex justify-center py-12">
-                  <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <FaTimes className="h-5 w-5 text-red-500" />
                     </div>
-              ) : filteredUsers.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <div className="text-gray-500 text-lg">No users found</div>
-                </div>
-              ) : (
-                filteredUsers.map((user) => (
-                  <div key={user._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-3 rounded-full ${
-                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100' : 'bg-blue-100'
-                          }`}>
-                            {user.role.toLowerCase() === 'employer' ? (
-                              <FaBuilding className="w-6 h-6 text-purple-600" />
-                            ) : (
-                              <FaUser className="w-6 h-6 text-blue-600" />
-                            )}
-                          </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                          {user.phone && (
-                              <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewProfile(user)}
-                            className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
-                            title="View Profile"
-                          >
-                            <FaEye className="w-5 h-5" />
-                          </button>
-                          {user.role.toLowerCase() === 'employer' && !user.isApproved && (
-                            <button
-                              onClick={() => handleApproveEmployer(user._id)}
-                              className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200"
-                              title="Approve Employer"
-                            >
-                              <FaUserCheck className="w-5 h-5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteUser(user._id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            title="Delete User"
-                          >
-                            <FaTrash className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Role</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                        </div>
-                        {user.role.toLowerCase() === 'jobseeker' && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">Profile Status</span>
-                            {(() => {
-                              const { isComplete, message } = checkProfileCompletion(user);
-                              return (
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {message}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                        )}
-                        {user.role.toLowerCase() === 'employer' && (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Status</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {user.isApproved ? 'Approved' : 'Pending'}
-                      </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Company</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.isCompanySetup ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                        }`}>
-                          {user.isCompanySetup ? 'Company Setup' : 'No Company'}
-                        </span>
-                            </div>
-                          </>
-                      )}
-                      </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-red-700">{error}</p>
                     </div>
                   </div>
-                ))
+                </div>
               )}
+
+              {/* Users Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {loading ? (
+                  <div className="col-span-full flex justify-center py-12">
+                    <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                  </div>
+                ) : filteredUsers.length === 0 ? (
+                  <div className="col-span-full text-center py-12">
+                    <div className="text-gray-500 text-lg">No users found</div>
+                  </div>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <div key={user._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                      <div className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-center space-x-4">
+                            <div className={`p-3 rounded-full ${
+                              user.role.toLowerCase() === 'employer' ? 'bg-purple-100' : 'bg-blue-100'
+                            }`}>
+                              {user.role.toLowerCase() === 'employer' ? (
+                                <FaBuilding className="w-6 h-6 text-purple-600" />
+                              ) : (
+                                <FaUser className="w-6 h-6 text-blue-600" />
+                              )}
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                              <p className="text-sm text-gray-500">{user.email}</p>
+                            {user.phone && (
+                                <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button
+                              onClick={() => handleViewProfile(user)}
+                              className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
+                              title="View Profile"
+                            >
+                              <FaEye className="w-5 h-5" />
+                            </button>
+                            {user.role.toLowerCase() === 'employer' && user.isCompanySetup && (
+                              <button
+                                onClick={() => handleViewCompany(user)}
+                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
+                                title="View Company Profile"
+                              >
+                                <FaBuilding className="w-5 h-5" />
+                              </button>
+                            )}
+                            {user.role.toLowerCase() === 'employer' && !user.isApproved && (
+                              <button
+                                onClick={() => handleApproveEmployer(user._id)}
+                                className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200"
+                                title="Approve Employer"
+                              >
+                                <FaUserCheck className="w-5 h-5" />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => handleDeleteUser(user._id)}
+                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                              title="Delete User"
+                            >
+                              <FaTrash className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <div className="mt-4 space-y-2">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Role</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                              user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                        }`}>
+                          {user.role}
+                        </span>
+                          </div>
+                          {user.role.toLowerCase() === 'jobseeker' && (
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Profile Status</span>
+                              {(() => {
+                                const { isComplete, message } = checkProfileCompletion(user);
+                                return (
+                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                    isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                  }`}>
+                                    {message}
+                                  </span>
+                                );
+                              })()}
+                            </div>
+                          )}
+                          {user.role.toLowerCase() === 'employer' && (
+                            <>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-500">Status</span>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                          user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        }`}>
+                          {user.isApproved ? 'Approved' : 'Pending'}
+                        </span>
+                              </div>
+                              <div className="flex items-center justify-between mt-2">
+                                <span className="text-sm text-gray-500">Company</span>
+                                {hasCompanyProfile(user) ? (
+                                  <span
+                                    onClick={() => handleViewCompany(user)}
+                                    className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
+                                    style={{ userSelect: 'none' }}
+                                  >
+                                    View Company Profile
+                                  </span>
+                                ) : (
+                                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                    No Company Profile
+                                  </span>
+                                )}
+                              </div>
+                            </>
+                        )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      </main>
 
       {/* Resume Modal */}
       {isResumeModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
           <div className="bg-white rounded-xl w-full max-w-5xl mx-4 h-[90vh] flex flex-col">
             <div className="p-4 border-b flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-900">Resume Viewer</h3>
@@ -511,6 +577,15 @@ const ManageUsers = () => {
                             <div>
                               <p className="text-sm font-medium text-gray-900">Education</p>
                               <p className="text-sm text-gray-600">{selectedUser.education}</p>
+                            </div>
+                          </div>
+                        )}
+                        {selectedUser.bio && (
+                          <div className="flex items-start space-x-3">
+                            <FaUser className="text-gray-400 mt-1" />
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">Bio</p>
+                              <p className="text-sm text-gray-600">{selectedUser.bio}</p>
                             </div>
                           </div>
                         )}
@@ -669,12 +744,20 @@ const ManageUsers = () => {
                           </span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span className="text-gray-600">Company Setup</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            selectedUser.isCompanySetup ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {selectedUser.isCompanySetup ? 'Completed' : 'Pending'}
-                          </span>
+                          <span className="text-gray-600">Company Profile</span>
+                          {hasCompanyProfile(selectedUser) ? (
+                            <button
+                              onClick={() => handleViewCompany(selectedUser)}
+                              className="px-4 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors flex items-center gap-2"
+                            >
+                              <FaBuilding className="w-4 h-4" />
+                              View Company Profile
+                            </button>
+                          ) : (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                              No Company Profile
+                            </span>
+                          )}
                         </div>
                       </>
                     )}
@@ -708,6 +791,146 @@ const ManageUsers = () => {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {isCompanyModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+            {companyLoading ? (
+              <div className="flex justify-center items-center h-32">
+                <div className="w-10 h-10 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : companyError ? (
+              <div className="text-red-600 text-center p-4">{companyError}</div>
+            ) : companyProfile ? (
+              <div className="bg-white rounded-lg overflow-hidden">
+                {/* Teal Header Background */}
+                <div className="bg-teal-600 h-48 relative">
+                  {/* Close Button */}
+                  <button
+                    onClick={closeCompanyModal}
+                    className="absolute top-4 right-4 text-white hover:text-gray-200 transition-colors"
+                  >
+                    <FaTimes className="w-6 h-6" />
+                  </button>
+                  
+                  {/* Company Logo */}
+                  <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
+                    <div className="w-24 h-24 rounded-full shadow-lg overflow-hidden bg-white border-4 border-white">
+                      {companyProfile.logo ? (
+                        <img 
+                          src={companyProfile.logo} 
+                          alt={companyProfile.name} 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <FaBuilding className="w-12 h-12 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Company Content */}
+                <div className="px-8 pb-8">
+                  {/* Company Header Info */}
+                  <div className="text-center pt-16 pb-8">
+                    <h2 className="text-2xl font-bold text-gray-900 mb-1">{companyProfile.name}</h2>
+                    <p className="text-gray-600">{companyProfile.industry}</p>
+                    
+                    {/* Rating Stars */}
+                    <div className="flex items-center justify-center mt-4 space-x-1">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <FaStar 
+                          key={star}
+                          className="w-5 h-5 text-gray-300"
+                        />
+                      ))}
+                      <span className="text-gray-600 ml-2">No reviews yet</span>
+                    </div>
+                  </div>
+
+                  {/* About Section */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">About {companyProfile.name}</h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Company Details */}
+                      <div className="space-y-4">
+                        <div className="flex items-center text-gray-600">
+                          <FaMapMarkerAlt className="w-5 h-5 mr-3 text-teal-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">Location</p>
+                            <p>{companyProfile.location}</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center text-gray-600">
+                          <FaUsers className="w-5 h-5 mr-3 text-teal-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">Employees</p>
+                            <p>{companyProfile.employeeCount} Employees</p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center text-gray-600">
+                          <FaCalendar className="w-5 h-5 mr-3 text-teal-600" />
+                          <div>
+                            <p className="font-medium text-gray-900">Established</p>
+                            <p>{new Date(companyProfile.establishedDate).toLocaleDateString()}</p>
+                          </div>
+                        </div>
+
+                        {companyProfile.website && (
+                          <div className="flex items-center text-gray-600">
+                            <FaGlobe className="w-5 h-5 mr-3 text-teal-600" />
+                            <div>
+                              <p className="font-medium text-gray-900">Website</p>
+                              <a 
+                                href={companyProfile.website}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-teal-600 hover:underline"
+                              >
+                                {companyProfile.website}
+                              </a>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Description */}
+                      <div className="space-y-4">
+                        <div className="flex items-start text-gray-600">
+                          <FaInfo className="w-5 h-5 mr-3 text-teal-600 mt-1" />
+                          <div>
+                            <p className="font-medium text-gray-900 mb-2">Description</p>
+                            <p className="text-gray-600">{companyProfile.description}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Reviews Section */}
+                  <div className="bg-white rounded-lg p-6 shadow-sm">
+                    <div className="flex justify-between items-center mb-6">
+                      <h3 className="text-lg font-semibold text-gray-900">Company Reviews</h3>
+                    </div>
+                    
+                    <div className="text-center text-gray-600 py-8">
+                      <p>No reviews yet for this company.</p>
+                      <button className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
+                        Add a Review
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       )}

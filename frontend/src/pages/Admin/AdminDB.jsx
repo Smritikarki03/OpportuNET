@@ -224,200 +224,202 @@ const AdminDashboard = () => {
   }, [auth?.token]);
 
   return (
-    <div className="flex min-h-screen bg-gray-50 text-gray-800">
-      <ToastContainer position="top-right" autoClose={3000} />
+    <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-
-      <main className="flex-1 p-8">
-        {/* Header */}
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-teal-800">Admin Dashboard</h1>
-            <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
-          </div>
-          <div className="flex items-center space-x-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-              <FaSearch className="absolute left-3 top-3 text-gray-400" />
+      
+      {/* Main Content */}
+      <main className="flex-1 ml-64 min-h-screen overflow-auto">
+        <div className="p-8">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-teal-800">Admin Dashboard</h1>
+              <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
             </div>
-            <div
-              className="relative cursor-pointer hover:scale-105 transition-transform"
-              onClick={() => navigate("/AdminNotifications")}
+            <div className="flex items-center space-x-4">
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Search..."
+                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+                <FaSearch className="absolute left-3 top-3 text-gray-400" />
+              </div>
+              <div
+                className="relative cursor-pointer hover:scale-105 transition-transform"
+                onClick={() => navigate("/AdminNotifications")}
+              >
+                <FaBell className="text-3xl text-teal-800" />
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                  3
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Stats */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-teal-100 text-teal-600">
+                  <FaUsers className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Users</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-emerald-100 text-emerald-600">
+                  <FaBriefcase className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Active Jobs</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.activeJobs}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-slate-100 text-slate-600">
+                  <FaFileAlt className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Inactive Jobs</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.inactiveJobs}</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-purple-100 text-purple-600">
+                  <FaChartLine className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm font-medium text-gray-600">Total Applications</p>
+                  <p className="text-2xl font-semibold text-gray-900">{stats.totalApplications}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Charts Section */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold mb-4">User Distribution</h2>
+              <div className="h-64">
+                <Pie data={userDistributionData} options={chartOptions} />
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-lg shadow-md">
+              <h2 className="text-lg font-semibold mb-4">Job Status</h2>
+              <div className="h-64 flex items-center">
+                <Bar data={jobStatusBarData} options={barOptions} />
+              </div>
+            </div>
+          </div>
+
+          {/* User Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-teal-800 mb-4">User Statistics</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-full bg-teal-100 text-teal-600 mr-3">
+                      <FaGraduationCap className="text-xl" />
+                    </div>
+                    <span className="text-gray-600">Job Seekers</span>
+                  </div>
+                  <span className="text-xl font-semibold text-gray-900">{stats.totalJobSeekers}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
+                      <FaUserTie className="text-xl" />
+                    </div>
+                    <span className="text-gray-600">Employers</span>
+                  </div>
+                  <span className="text-xl font-semibold text-gray-900">{stats.totalEmployers}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+              <h3 className="text-lg font-semibold text-teal-800 mb-4">Job Statistics</h3>
+              <div className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-full bg-green-100 text-green-600 mr-3">
+                      <FaBriefcase className="text-xl" />
+                    </div>
+                    <span className="text-gray-600">Active Jobs</span>
+                  </div>
+                  <span className="text-xl font-semibold text-gray-900">{stats.activeJobs}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center">
+                    <div className="p-2 rounded-full bg-yellow-100 text-yellow-600 mr-3">
+                      <FaFileAlt className="text-xl" />
+                    </div>
+                    <span className="text-gray-600">Inactive Jobs</span>
+                  </div>
+                  <span className="text-xl font-semibold text-gray-900">{stats.inactiveJobs}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Actions */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <button
+              onClick={() => navigate("/ManageUsers")}
+              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
             >
-              <FaBell className="text-3xl text-teal-800" />
-              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                3
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-teal-100 text-teal-600">
-                <FaUsers className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalUsers}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-emerald-100 text-emerald-600">
-                <FaBriefcase className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Active Jobs</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.activeJobs}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-slate-100 text-slate-600">
-                <FaFileAlt className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Inactive Jobs</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.inactiveJobs}</p>
-              </div>
-            </div>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                <FaChartLine className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Applications</p>
-                <p className="text-2xl font-semibold text-gray-900">{stats.totalApplications}</p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">User Distribution</h2>
-            <div className="h-64">
-              <Pie data={userDistributionData} options={chartOptions} />
-            </div>
-          </div>
-          
-          <div className="bg-white p-6 rounded-lg shadow-md">
-            <h2 className="text-lg font-semibold mb-4">Job Status</h2>
-            <div className="h-64 flex items-center">
-              <Bar data={jobStatusBarData} options={barOptions} />
-            </div>
-          </div>
-        </div>
-
-        {/* User Statistics */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-teal-800 mb-4">User Statistics</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="p-2 rounded-full bg-teal-100 text-teal-600 mr-3">
-                    <FaGraduationCap className="text-xl" />
-                  </div>
-                  <span className="text-gray-600">Job Seekers</span>
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-teal-100 text-teal-600">
+                  <FaUsers className="text-2xl" />
                 </div>
-                <span className="text-xl font-semibold text-gray-900">{stats.totalJobSeekers}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="p-2 rounded-full bg-blue-100 text-blue-600 mr-3">
-                    <FaUserTie className="text-xl" />
-                  </div>
-                  <span className="text-gray-600">Employers</span>
+                <div className="ml-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Manage Users</h3>
+                  <p className="text-sm text-gray-600">View and manage all users</p>
                 </div>
-                <span className="text-xl font-semibold text-gray-900">{stats.totalEmployers}</span>
               </div>
-            </div>
+            </button>
+            <button
+              onClick={() => navigate("/ManageJob")}
+              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
+            >
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-blue-100 text-blue-600">
+                  <FaBriefcase className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Manage Jobs</h3>
+                  <p className="text-sm text-gray-600">View and manage all jobs</p>
+                </div>
+              </div>
+            </button>
+            <button
+              onClick={() => navigate("/AdminNotifications")}
+              className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
+            >
+              <div className="flex items-center">
+                <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                  <FaBell className="text-2xl" />
+                </div>
+                <div className="ml-4">
+                  <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+                  <p className="text-sm text-gray-600">View all notifications</p>
+                </div>
+              </div>
+            </button>
           </div>
-
-          <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
-            <h3 className="text-lg font-semibold text-teal-800 mb-4">Job Statistics</h3>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="p-2 rounded-full bg-green-100 text-green-600 mr-3">
-                    <FaBriefcase className="text-xl" />
-                  </div>
-                  <span className="text-gray-600">Active Jobs</span>
-                </div>
-                <span className="text-xl font-semibold text-gray-900">{stats.activeJobs}</span>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center">
-                  <div className="p-2 rounded-full bg-yellow-100 text-yellow-600 mr-3">
-                    <FaFileAlt className="text-xl" />
-                  </div>
-                  <span className="text-gray-600">Inactive Jobs</span>
-                </div>
-                <span className="text-xl font-semibold text-gray-900">{stats.inactiveJobs}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <button
-            onClick={() => navigate("/ManageUsers")}
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-teal-100 text-teal-600">
-                <FaUsers className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">Manage Users</h3>
-                <p className="text-sm text-gray-600">View and manage all users</p>
-              </div>
-            </div>
-          </button>
-          <button
-            onClick={() => navigate("/ManageJob")}
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                <FaBriefcase className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">Manage Jobs</h3>
-                <p className="text-sm text-gray-600">View and manage all jobs</p>
-              </div>
-            </div>
-          </button>
-          <button
-            onClick={() => navigate("/AdminNotifications")}
-            className="bg-white p-6 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow text-left"
-          >
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 text-yellow-600">
-                <FaBell className="text-2xl" />
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-                <p className="text-sm text-gray-600">View all notifications</p>
-              </div>
-            </div>
-          </button>
         </div>
       </main>
     </div>

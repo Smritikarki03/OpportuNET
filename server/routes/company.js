@@ -71,14 +71,24 @@ router.post('/', authenticate, upload.single('logo'), async (req, res) => {
     if (company) {
       Object.assign(company, companyData);
       await company.save();
+      
+      // Update user's companyId and set isCompanySetup to true
+      await User.findByIdAndUpdate(userId, { 
+        companyId: company._id,
+        isCompanySetup: true 
+      });
+      
       return res.status(200).json({ message: 'Company profile updated', company });
     }
 
     company = new Company(companyData);
     await company.save();
 
-    // Update user's companyId
-    await User.findByIdAndUpdate(userId, { companyId: company._id });
+    // Update user's companyId and set isCompanySetup to true
+    await User.findByIdAndUpdate(userId, { 
+      companyId: company._id,
+      isCompanySetup: true 
+    });
 
     res.status(201).json({ message: 'Company profile created', company });
   } catch (err) {
