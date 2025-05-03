@@ -286,95 +286,95 @@ const ManageUsers = () => {
       {/* Main Content */}
       <main className="flex-1 ml-64 min-h-screen overflow-auto">
         <div className="p-8">
-          <div className="max-w-7xl mx-auto">
-            <div className="flex flex-col space-y-6">
-              {/* Header Section */}
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-                <div>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col space-y-6">
+            {/* Header Section */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
+              <div>
                   <h1 className="text-3xl font-bold text-teal-800">Manage Users</h1>
                   <p className="text-gray-600">View and manage all registered users</p>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-                  <div className="relative flex-grow sm:flex-grow-0">
-                    <input
-                      type="text"
-                      placeholder="Search users..."
-                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                    <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
-                  </div>
-                  <div className="relative">
-                    <select
-                      className="appearance-none pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-white"
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                    >
-                      <option value="all">All Users</option>
-                      <option value="jobseeker">Job Seekers</option>
-                      <option value="employer">Employers</option>
-                    </select>
-                    <FaFilter className="absolute left-3 top-3.5 text-gray-400" />
-                  </div>
-                </div>
               </div>
+              <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+                <div className="relative flex-grow sm:flex-grow-0">
+              <input
+                type="text"
+                    placeholder="Search users..."
+                    className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+                  <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
+            </div>
+                <div className="relative">
+            <select
+                    className="appearance-none pl-10 pr-8 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200 bg-white"
+              value={filter}
+              onChange={(e) => setFilter(e.target.value)}
+            >
+              <option value="all">All Users</option>
+              <option value="jobseeker">Job Seekers</option>
+              <option value="employer">Employers</option>
+            </select>
+                  <FaFilter className="absolute left-3 top-3.5 text-gray-400" />
+                </div>
+          </div>
+        </div>
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
-                  <div className="flex">
-                    <div className="flex-shrink-0">
-                      <FaTimes className="h-5 w-5 text-red-500" />
-                    </div>
-                    <div className="ml-3">
-                      <p className="text-sm text-red-700">{error}</p>
-                    </div>
+            {/* Error Message */}
+        {error && (
+              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+                <div className="flex">
+                  <div className="flex-shrink-0">
+                    <FaTimes className="h-5 w-5 text-red-500" />
+                  </div>
+                  <div className="ml-3">
+                    <p className="text-sm text-red-700">{error}</p>
                   </div>
                 </div>
-              )}
+          </div>
+        )}
 
-              {/* Users Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {loading ? (
-                  <div className="col-span-full flex justify-center py-12">
-                    <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                ) : filteredUsers.length === 0 ? (
-                  <div className="col-span-full text-center py-12">
-                    <div className="text-gray-500 text-lg">No users found</div>
-                  </div>
-                ) : (
-                  filteredUsers.map((user) => (
-                    <div key={user._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                      <div className="p-6">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center space-x-4">
-                            <div className={`p-3 rounded-full ${
-                              user.role.toLowerCase() === 'employer' ? 'bg-purple-100' : 'bg-blue-100'
-                            }`}>
-                              {user.role.toLowerCase() === 'employer' ? (
-                                <FaBuilding className="w-6 h-6 text-purple-600" />
-                              ) : (
-                                <FaUser className="w-6 h-6 text-blue-600" />
-                              )}
-                            </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                              <p className="text-sm text-gray-500">{user.email}</p>
-                            {user.phone && (
-                                <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
-                              )}
-                            </div>
+            {/* Users Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {loading ? (
+                <div className="col-span-full flex justify-center py-12">
+                  <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
+                    </div>
+              ) : filteredUsers.length === 0 ? (
+                <div className="col-span-full text-center py-12">
+                  <div className="text-gray-500 text-lg">No users found</div>
+                </div>
+              ) : (
+                filteredUsers.map((user) => (
+                  <div key={user._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
+                    <div className="p-6">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center space-x-4">
+                          <div className={`p-3 rounded-full ${
+                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100' : 'bg-blue-100'
+                          }`}>
+                            {user.role.toLowerCase() === 'employer' ? (
+                              <FaBuilding className="w-6 h-6 text-purple-600" />
+                            ) : (
+                              <FaUser className="w-6 h-6 text-blue-600" />
+                            )}
                           </div>
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleViewProfile(user)}
-                              className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
-                              title="View Profile"
-                            >
-                              <FaEye className="w-5 h-5" />
-                            </button>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
+                            <p className="text-sm text-gray-500">{user.email}</p>
+                          {user.phone && (
+                              <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleViewProfile(user)}
+                            className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
+                            title="View Profile"
+                          >
+                            <FaEye className="w-5 h-5" />
+                          </button>
                             {user.role.toLowerCase() === 'employer' && user.isCompanySetup && (
                               <button
                                 onClick={() => handleViewCompany(user)}
@@ -384,86 +384,86 @@ const ManageUsers = () => {
                                 <FaBuilding className="w-5 h-5" />
                               </button>
                             )}
-                            {user.role.toLowerCase() === 'employer' && !user.isApproved && (
-                              <button
-                                onClick={() => handleApproveEmployer(user._id)}
-                                className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200"
-                                title="Approve Employer"
-                              >
-                                <FaUserCheck className="w-5 h-5" />
-                              </button>
-                            )}
+                          {user.role.toLowerCase() === 'employer' && !user.isApproved && (
                             <button
-                              onClick={() => handleDeleteUser(user._id)}
-                              className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                              title="Delete User"
+                              onClick={() => handleApproveEmployer(user._id)}
+                              className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200"
+                              title="Approve Employer"
                             >
-                              <FaTrash className="w-5 h-5" />
+                              <FaUserCheck className="w-5 h-5" />
                             </button>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-4 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">Role</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                              user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {user.role}
-                        </span>
-                          </div>
-                          {user.role.toLowerCase() === 'jobseeker' && (
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Profile Status</span>
-                              {(() => {
-                                const { isComplete, message } = checkProfileCompletion(user);
-                                return (
-                                  <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                    isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {message}
-                                  </span>
-                                );
-                              })()}
-                            </div>
                           )}
-                          {user.role.toLowerCase() === 'employer' && (
-                            <>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-500">Status</span>
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                          user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                        }`}>
-                          {user.isApproved ? 'Approved' : 'Pending'}
-                        </span>
-                              </div>
-                              <div className="flex items-center justify-between mt-2">
-                                <span className="text-sm text-gray-500">Company</span>
-                                {hasCompanyProfile(user) ? (
-                                  <span
-                                    onClick={() => handleViewCompany(user)}
-                                    className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 cursor-pointer hover:bg-blue-200 transition-colors"
-                                    style={{ userSelect: 'none' }}
-                                  >
-                                    View Company Profile
-                                  </span>
-                                ) : (
-                                  <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                    No Company Profile
-                                  </span>
-                                )}
-                              </div>
-                            </>
-                        )}
+                          <button
+                            onClick={() => handleDeleteUser(user._id)}
+                            className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                            title="Delete User"
+                          >
+                            <FaTrash className="w-5 h-5" />
+                          </button>
                         </div>
                       </div>
+                      
+                      <div className="mt-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-gray-500">Role</span>
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
+                      }`}>
+                        {user.role}
+                      </span>
+                        </div>
+                        {user.role.toLowerCase() === 'jobseeker' && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm text-gray-500">Profile Status</span>
+                            {(() => {
+                              const { isComplete, message } = checkProfileCompletion(user);
+                              return (
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                                  isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                }`}>
+                                  {message}
+                                </span>
+                              );
+                            })()}
+                          </div>
+                        )}
+                        {user.role.toLowerCase() === 'employer' && (
+                          <>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Status</span>
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {user.isApproved ? 'Approved' : 'Pending'}
+                      </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm text-gray-500">Company</span>
+                              {user.isCompanySetup ? (
+                                <button
+                                  onClick={() => handleViewCompany(user)}
+                                  className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors flex items-center gap-1"
+                                >
+                                  <FaBuilding className="w-3 h-3" />
+                                  View Company
+                                </button>
+                              ) : (
+                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                                  No Company
+                        </span>
+                              )}
+                            </div>
+                          </>
+                      )}
+                      </div>
                     </div>
-                  ))
-                )}
-              </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
+      </div>
       </main>
 
       {/* Resume Modal */}
@@ -748,15 +748,14 @@ const ManageUsers = () => {
                           {hasCompanyProfile(selectedUser) ? (
                             <button
                               onClick={() => handleViewCompany(selectedUser)}
-                              className="px-4 py-1 rounded-lg text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors flex items-center gap-2"
+                              className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors"
                             >
-                              <FaBuilding className="w-4 h-4" />
                               View Company Profile
                             </button>
                           ) : (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
                               No Company Profile
-                            </span>
+                          </span>
                           )}
                         </div>
                       </>

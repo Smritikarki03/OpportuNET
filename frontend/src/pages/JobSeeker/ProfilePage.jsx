@@ -4,6 +4,8 @@ import { useAuth } from "../../context/auth";
 import Header from "../../Components/Header";
 import Footer from "../../Components/Footer";
 import axios from "axios";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 
 const ProfilePage = () => {
@@ -13,8 +15,20 @@ const ProfilePage = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [postedJobs, setPostedJobs] = useState([]);
+  const [selectedCoverLetter, setSelectedCoverLetter] = useState(null);
+  const [showCoverLetterModal, setShowCoverLetterModal] = useState(false);
+  const [interviewTimeInput, setInterviewTimeInput] = useState("");
+  const [statusChange, setStatusChange] = useState({});
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Add debug logging
+  useEffect(() => {
+    console.log('Auth context:', auth);
+    console.log('Auth token:', auth?.token);
+    console.log('Auth user:', auth?.user);
+  }, [auth]);
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -27,7 +41,7 @@ const ProfilePage = () => {
       }
 
       // Fetch user info
-      const userResponse = await fetch("http://localhost:5000/api/auth/userInfo", {
+      const userResponse = await axios.get("http://localhost:5000/api/auth/userInfo", {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.token}`,
@@ -35,29 +49,44 @@ const ProfilePage = () => {
         },
       });
 
-      const userData = await userResponse.json();
-
-      if (userResponse.ok) {
+      if (userResponse.status === 200) {
+        const userData = userResponse.data;
         const processedUser = {
           ...userData,
           _id: auth?.user?.id || auth?.user?._id || userData._id || userData.id
         };
 
-        // If user is an employer, fetch their posted jobs
+        // If user is an employer, fetch their posted jobs with applications
         if (processedUser.role === 'employer') {
-          const jobsResponse = await fetch("http://localhost:5000/api/jobs", {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${auth.token}`,
-            },
-          });
+          try {
+            console.log('Fetching jobs for employer:', processedUser._id);
+            const jobsResponse = await axios.get("http://localhost:5000/api/jobs", {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${auth.token}`,
+              },
+            });
 
-          if (jobsResponse.ok) {
-            const jobsData = await jobsResponse.json();
-            console.log("Fetched jobs data:", jobsData);
-            setPostedJobs(jobsData);
-          } else {
-            console.error("Failed to fetch jobs:", await jobsResponse.text());
+            if (jobsResponse.status === 200) {
+              const jobsData = jobsResponse.data;
+              console.log("Fetched jobs data:", jobsData);
+              
+              // Process jobs data to ensure applications array exists
+              const processedJobs = jobsData.map(job => ({
+                ...job,
+                applications: job.applications || [],
+                totalApplicants: (job.applications || []).length
+              }));
+              
+              setPostedJobs(processedJobs);
+              processedUser.postedJobs = processedJobs;
+              
+              console.log("Set posted jobs with applications:", processedJobs);
+            } else {
+              console.error("Failed to fetch jobs:", jobsResponse.data);
+            }
+          } catch (error) {
+            console.error("Error fetching employer jobs:", error);
           }
         }
         
@@ -72,7 +101,7 @@ const ProfilePage = () => {
         }
         setShowPopup(isProfileIncomplete);
       } else {
-        setError(userData.message || "Failed to load user data.");
+        setError(userResponse.data.message || "Failed to load user data.");
       }
     } catch (error) {
       console.error("Error in fetchUserData:", error);
@@ -114,49 +143,89 @@ const ProfilePage = () => {
 
   const closePopup = () => setShowPopup(false);
 
-  const handleAccept = async (applicantId) => {
+  const handleAccept = async (jobId, applicantId) => {
     try {
-      const response = await fetch("http://localhost:5000/api/employer/acceptApplicant", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify({ applicantId }),
-      });
+      console.log('Accepting application:', { jobId, applicantId });
+      const response = await axios.put(
+        `http://localhost:5000/api/jobs/${jobId}/applications/${applicantId}/status`,
+        { status: 'ACCEPTED' },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
 
-      const result = await response.json();
-      if (response.ok) {
-        setUser(result.user);
-        localStorage.setItem("user", JSON.stringify(result.user));
+      if (response.status === 200) {
+        // Show success message
+        alert('Application accepted successfully!');
+        // Refresh the jobs data to get updated application statuses
+        fetchUserData();
       } else {
-        console.error("Failed to accept applicant:", result.message);
+        console.error("Failed to accept applicant:", response.data.message);
+        alert('Failed to accept application. Please try again.');
       }
     } catch (error) {
       console.error("Error accepting applicant:", error);
+      alert('Error accepting application. Please try again.');
     }
   };
 
-  const handleReject = async (applicantId) => {
+  const handleReject = async (jobId, applicantId) => {
     try {
-      const response = await fetch("http://localhost:5000/api/employer/rejectApplicant", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${auth.token}`,
-        },
-        body: JSON.stringify({ applicantId }),
-      });
+      console.log('Rejecting application:', { jobId, applicantId });
+      const response = await axios.put(
+        `http://localhost:5000/api/jobs/${jobId}/applications/${applicantId}/status`,
+        { status: 'REJECTED' },
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
 
-      const result = await response.json();
-      if (response.ok) {
-        setUser(result.user);
-        localStorage.setItem("user", JSON.stringify(result.user));
+      if (response.status === 200) {
+        // Show success message
+        alert('Application rejected successfully!');
+        // Refresh the jobs data to get updated application statuses
+        fetchUserData();
       } else {
-        console.error("Failed to reject applicant:", result.message);
+        console.error("Failed to reject applicant:", response.data.message);
+        alert('Failed to reject application. Please try again.');
       }
     } catch (error) {
       console.error("Error rejecting applicant:", error);
+      alert('Error rejecting application. Please try again.');
+    }
+  };
+
+  const handleStatusChange = async (jobId, applicantId, newStatus, interviewTime) => {
+    try {
+      const payload = { status: newStatus };
+      if (newStatus === 'INTERVIEW_SCHEDULED' && interviewTime) {
+        payload.interviewTime = interviewTime;
+      }
+      const response = await axios.put(
+        `http://localhost:5000/api/jobs/${jobId}/applications/${applicantId}/status`,
+        payload,
+        {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+
+      if (response.status === 200) {
+        alert(`Application status updated to ${newStatus.replace('_', ' ')}!`);
+        fetchUserData();
+      } else {
+        alert('Failed to update application status. Please try again.');
+      }
+    } catch (error) {
+      alert('Error updating application status. Please try again.');
     }
   };
 
@@ -185,6 +254,83 @@ const ProfilePage = () => {
     }
   };
 
+  const handleViewCoverLetter = (application) => {
+    setSelectedCoverLetter(application);
+    setShowCoverLetterModal(true);
+  };
+
+  const CoverLetterModal = ({ coverLetter, onClose }) => {
+    if (!coverLetter) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-semibold text-teal-700">Cover Letter</h3>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+          {coverLetter.coverLetterFile ? (
+            <iframe
+              src={`http://localhost:5000/${coverLetter.coverLetterFile}`}
+              className="w-full h-[60vh] border-0"
+              title="Cover Letter PDF"
+            />
+          ) : (
+            <div className="prose max-w-none">
+              <pre className="whitespace-pre-wrap font-sans">{coverLetter.coverLetter}</pre>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const handleArchiveApplication = async (applicationId, archived) => {
+    try {
+      await axios.put(
+        `http://localhost:5000/api/applications/${applicationId}/archive`,
+        { archived },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+      fetchUserData();
+    } catch (error) {
+      alert('Error archiving application.');
+    }
+  };
+
+  const handleDeleteApplication = async (applicationId) => {
+    try {
+      await axios.delete(
+        `http://localhost:5000/api/applications/${applicationId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${auth.token}`,
+          },
+        }
+      );
+      fetchUserData();
+    } catch (error) {
+      alert('Error deleting application.');
+    }
+  };
+
+  // Filter archived applications for the modal
+  const archivedApplications = postedJobs
+    .flatMap(job => (job.applications || []).map(app => ({ ...app, jobTitle: job.title, jobId: job._id })))
+    .filter(app => app.archived);
+
   if (isLoading) return <div className="text-center text-gray-500">Loading...</div>;
   if (error) return <div className="text-center text-red-500">{error}</div>;
   if (!user) return <div className="text-center text-gray-500">Please log in to view your profile.</div>;
@@ -199,8 +345,8 @@ const ProfilePage = () => {
       <br/>
       <br/>
       
-      <div className="min-h-screen bg-gray-50 p-6">
-        <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg p-6">
+      <div className="min-h-screen bg-gray-50 px-4 py-6">
+        <div className="max-w-6xl mx-auto bg-white shadow-lg rounded-lg px-4 py-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="w-24 h-24 bg-gray-200 rounded-full flex items-center justify-center">
@@ -300,7 +446,7 @@ const ProfilePage = () => {
         {user.role === "employer" && (
           <>
             {/* Posted Jobs Section */}
-            <div className="max-w-4xl mx-auto mt-8 space-y-6">
+            <div className="max-w-6xl mx-auto mt-8 space-y-6">
               {/* Statistics Cards */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-100 hover:shadow-md transition-shadow duration-200">
@@ -453,12 +599,18 @@ const ProfilePage = () => {
           </>
         )}
 
-        <div className="max-w-4xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
-          <h2 className="text-lg font-semibold text-teal-700 mb-4">
-            {user.role === "employer" ? "Job Applicants" : "Applied Jobs"}
-          </h2>
-          <div className="overflow-x-auto">
-            {user.role === "employer" ? (
+        {user.role === "employer" && (
+          <div className="max-w-6xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-teal-700 mb-4">Job Applicants</h2>
+            <div className="overflow-x-auto">
+              <span
+                className="text-teal-600 hover:text-teal-800 underline cursor-pointer mb-4 inline-block"
+                onClick={() => setShowArchiveModal(true)}
+                role="button"
+                tabIndex={0}
+              >
+                View Archived Applications
+              </span>
               <table className="w-full text-left">
                 <thead>
                   <tr className="text-gray-600 border-b">
@@ -466,24 +618,35 @@ const ProfilePage = () => {
                     <th className="py-2 px-4">Job Title</th>
                     <th className="py-2 px-4">Applied Date</th>
                     <th className="py-2 px-4">Resume</th>
+                    <th className="py-2 px-4">Cover Letter</th>
                     <th className="py-2 px-4">Status</th>
                     <th className="py-2 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {postedJobs.some(job => job.applications?.length > 0) ? (
-                    postedJobs.map(job => 
-                      job.applications?.map((application, index) => (
+                    postedJobs.map(job => {
+                      // Get all applications from the job
+                      const applications = job.applications || [];
+                      
+                      // Sort applications by date, most recent first
+                      const sortedApplications = [...applications]
+                        .filter(app => !app.archived)
+                        .sort((a, b) => new Date(b.appliedDate || b.createdAt) - new Date(a.appliedDate || a.createdAt));
+
+                      return sortedApplications.map((application, index) => (
                         <tr key={`${job._id}-${index}`} className="border-b hover:bg-gray-50">
-                          <td className="py-2 px-4">{application.applicantName}</td>
+                          <td className="py-2 px-4">
+                            {application.applicantName}
+                          </td>
                           <td className="py-2 px-4">{job.title}</td>
                           <td className="py-2 px-4">
-                            {new Date(application.appliedDate).toLocaleDateString()}
+                            {new Date(application.appliedDate || application.createdAt).toLocaleDateString()}
                           </td>
                           <td className="py-2 px-4">
                             {application.resume ? (
                               <a
-                                href={`http://localhost:5000${application.resume}`}
+                                href={`http://localhost:5000/${application.resume}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-teal-600 hover:underline"
@@ -495,39 +658,90 @@ const ProfilePage = () => {
                             )}
                           </td>
                           <td className="py-2 px-4">
-                            <span
-                              className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                                application.status === "PENDING"
-                                  ? "bg-yellow-100 text-yellow-800"
-                                  : application.status === "ACCEPTED"
-                                  ? "bg-green-100 text-green-800"
-                                  : "bg-red-100 text-red-800"
-                              }`}
-                            >
-                              {application.status}
-                            </span>
-                          </td>
-                          <td className="py-2 px-4">
-                            {application.status === "PENDING" && (
-                              <div className="flex space-x-2">
-                                <button
-                                  onClick={() => handleAccept(application._id)}
-                                  className="bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 text-sm"
-                                >
-                                  Accept
-                                </button>
-                                <button
-                                  onClick={() => handleReject(application._id)}
-                                  className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 text-sm"
-                                >
-                                  Reject
-                                </button>
-                              </div>
+                            {(application.coverLetter || application.coverLetterFile) ? (
+                              <button
+                                onClick={() => handleViewCoverLetter(application)}
+                                className="text-teal-600 hover:underline"
+                              >
+                                View Cover Letter
+                              </button>
+                            ) : (
+                              "No Cover Letter"
                             )}
                           </td>
+                          <td className="py-2 px-4">
+                            <div className="flex flex-col space-y-2">
+                              <select
+                                value={statusChange[`${job._id}-${application.applicantId || application.userId}`] || application.status}
+                                onChange={e => {
+                                  // Always use all-caps value
+                                  const value = e.target.value;
+                                  setStatusChange(prev => ({ ...prev, [`${job._id}-${application.applicantId || application.userId}`]: value }));
+                                }}
+                                className="border rounded px-2 py-1 text-sm"
+                              >
+                                <option value="APPLIED">Applied</option>
+                                <option value="REVIEWED">Reviewed</option>
+                                <option value="SHORTLISTED">Shortlisted</option>
+                                <option value="INTERVIEW_SCHEDULED">Interview Scheduled</option>
+                                <option value="INTERVIEWED">Interviewed</option>
+                                <option value="ACCEPTED">Accepted</option>
+                                <option value="REJECTED">Rejected</option>
+                              </select>
+                              {statusChange[`${job._id}-${application.applicantId || application.userId}`] === 'INTERVIEW_SCHEDULED' && (
+                                <input
+                                  type="datetime-local"
+                                  className="border rounded px-2 py-1 text-sm mt-1"
+                                  value={interviewTimeInput}
+                                  onChange={e => setInterviewTimeInput(e.target.value)}
+                                />
+                              )}
+                              <button
+                                className="bg-teal-500 text-white px-3 py-1 rounded hover:bg-teal-600 text-sm mt-1"
+                                onClick={async () => {
+                                  const newStatus = (statusChange[`${job._id}-${application.applicantId || application.userId}`] || application.status).toUpperCase();
+                                  if (newStatus === 'INTERVIEW_SCHEDULED' && !interviewTimeInput) {
+                                    alert('Please select interview time.');
+                                    return;
+                                  }
+                                  await handleStatusChange(
+                                    job._id,
+                                    application.applicantId || application.userId,
+                                    newStatus,
+                                    newStatus === 'INTERVIEW_SCHEDULED' ? interviewTimeInput : undefined
+                                  );
+                                  if (newStatus !== 'INTERVIEW_SCHEDULED') setInterviewTimeInput("");
+                                }}
+                              >
+                                Update
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-2 px-4">
+                            <div className="flex flex-row space-x-4 justify-center">
+                              <button
+                                className="text-yellow-600 hover:text-yellow-800 font-medium text-sm"
+                                onClick={async () => {
+                                  await handleArchiveApplication(application._id, !application.archived);
+                                }}
+                              >
+                                {application.archived ? 'Unarchive' : 'Archive'}
+                              </button>
+                              <button
+                                className="text-red-600 hover:text-red-900 font-medium text-sm"
+                                onClick={async () => {
+                                  if (window.confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
+                                    await handleDeleteApplication(application._id);
+                                  }
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
                         </tr>
-                      ))
-                    )
+                      ));
+                    })
                   ) : (
                     <tr>
                       <td colSpan="6" className="py-4 px-4 text-center text-gray-500">
@@ -537,48 +751,82 @@ const ProfilePage = () => {
                   )}
                 </tbody>
               </table>
-            ) : (
+            </div>
+          </div>
+        )}
+
+        {user.role === "jobseeker" && (
+          <div className="max-w-6xl mx-auto mt-8 bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
+            <h2 className="text-2xl font-bold text-teal-700 mb-4">Applied Jobs</h2>
+            <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-gray-600 border-b">
-                    <th className="py-2 px-4">Date</th>
-                    <th className="py-2 px-4">Job Role</th>
-                    <th className="py-2 px-4">Company</th>
-                    <th className="py-2 px-4">Status</th>
+                  <tr className="border-b text-base text-gray-700">
+                    <th className="py-3 px-4 font-semibold">Date</th>
+                    <th className="py-3 px-4 font-semibold">Job Role</th>
+                    <th className="py-3 px-4 font-semibold">Company</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {user.appliedJobs?.length > 0 ? (
-                    user.appliedJobs.map((job, index) => (
-                      <tr key={index} className="border-b hover:bg-gray-50">
-                        <td className="py-2 px-4">{job.date || "N/A"}</td>
-                        <td className="py-2 px-4">{job.role || "N/A"}</td>
-                        <td className="py-2 px-4">{job.company || "N/A"}</td>
-                        <td className="py-2 px-4">
-                          <span
-                            className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${
-                              job.status === "PENDING"
-                                ? "bg-gray-200 text-gray-800"
-                                : "bg-teal-200 text-teal-800"
-                            }`}
-                          >
-                            {job.status || "N/A"}
-                          </span>
-                        </td>
-                      </tr>
-                    ))
+                  {user.appliedJobs && user.appliedJobs.length > 0 ? (
+                    user.appliedJobs.map((job, index) => {
+                      let statusColor = "bg-gray-100 text-gray-800";
+                      if (job.status === "APPLIED") statusColor = "bg-blue-100 text-blue-800";
+                      else if (job.status === "REVIEWED") statusColor = "bg-yellow-100 text-yellow-800";
+                      else if (job.status === "SHORTLISTED") statusColor = "bg-purple-100 text-purple-800";
+                      else if (job.status === "INTERVIEW_SCHEDULED") statusColor = "bg-orange-100 text-orange-800";
+                      else if (job.status === "INTERVIEWED") statusColor = "bg-indigo-100 text-indigo-800";
+                      else if (job.status === "ACCEPTED") statusColor = "bg-green-100 text-green-800";
+                      else if (job.status === "REJECTED") statusColor = "bg-red-100 text-red-800";
+                      return (
+                        <tr key={index} className={index % 2 === 0 ? "bg-gray-50" : ""}>
+                          <td className="py-3 px-4">{job.date || "N/A"}</td>
+                          <td className="py-3 px-4">{job.role || "N/A"}</td>
+                          <td className="py-3 px-4">{job.company || "N/A"}</td>
+                          <td className="py-3 px-4">
+                            <span className={`inline-block px-3 py-1 text-sm font-medium rounded-full ${statusColor}`}>
+                              {job.status || "N/A"}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex flex-row space-x-4 justify-center">
+                              <button
+                                className="text-blue-600 hover:text-blue-900 font-medium text-sm"
+                                onClick={() => alert('Edit functionality coming soon!')}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                className="text-red-600 hover:text-red-900 font-medium text-sm"
+                                onClick={() => {
+                                  if (window.confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
+                                    // Remove from UI (optional: call backend if needed)
+                                    // For now, just show alert
+                                    alert('Delete functionality coming soon!');
+                                  }
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
                   ) : (
                     <tr>
-                      <td colSpan="4" className="py-2 px-4 text-gray-500">
+                      <td colSpan="5" className="py-6 px-4 text-center text-gray-500 text-lg">
                         No jobs applied yet.
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
-            )}
+            </div>
           </div>
-        </div>
+        )}
 
         {showPopup && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -606,6 +854,75 @@ const ProfilePage = () => {
               >
                 Close
               </button>
+            </div>
+          </div>
+        )}
+
+        {showCoverLetterModal && (
+          <CoverLetterModal
+            coverLetter={selectedCoverLetter}
+            onClose={() => setShowCoverLetterModal(false)}
+          />
+        )}
+
+        {/* Archive Modal */}
+        {showArchiveModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-3xl w-full max-h-[80vh] overflow-y-auto border border-gray-200">
+              <div className="flex justify-between items-center mb-4 border-b pb-2">
+                <h3 className="text-2xl font-bold text-teal-700">Archived Applications</h3>
+                <button
+                  onClick={() => setShowArchiveModal(false)}
+                  className="text-gray-400 hover:text-gray-700 text-2xl font-bold transition"
+                  title="Close"
+                >
+                  &times;
+                </button>
+              </div>
+              <table className="w-full text-left">
+                <thead>
+                  <tr className="border-b text-base text-gray-700">
+                    <th className="py-3 px-4 font-semibold">Name</th>
+                    <th className="py-3 px-4 font-semibold">Job Title</th>
+                    <th className="py-3 px-4 font-semibold">Applied Date</th>
+                    <th className="py-3 px-4 font-semibold">Status</th>
+                    <th className="py-3 px-4 font-semibold">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {archivedApplications.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="text-center text-gray-500 py-6">No archived applications.</td>
+                    </tr>
+                  ) : (
+                    archivedApplications.map((app, idx) => (
+                      <tr
+                        key={app._id}
+                        className={idx % 2 === 0 ? "bg-gray-50" : ""}
+                      >
+                        <td className="py-3 px-4">{app.applicantName}</td>
+                        <td className="py-3 px-4">{app.jobTitle}</td>
+                        <td className="py-3 px-4">{new Date(app.appliedDate).toLocaleDateString()}</td>
+                        <td className="py-3 px-4">{app.status}</td>
+                        <td className="py-3 px-4">
+                          <button
+                            className="text-yellow-600 hover:text-yellow-800 font-medium text-sm"
+                            onClick={() => handleArchiveApplication(app._id, false)}
+                          >
+                            Unarchive
+                          </button>
+                          <button
+                            className="text-red-600 hover:text-red-900 font-medium text-sm ml-4"
+                            onClick={() => handleDeleteApplication(app._id)}
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
           </div>
         )}

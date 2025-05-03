@@ -1,13 +1,16 @@
 // src/components/CompanyProf.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { FaStar } from 'react-icons/fa';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import Header from './Header';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CompanyProf = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [company, setCompany] = useState(null);
   const [reviews, setReviews] = useState([]);
   const [currentUser, setCurrentUser] = useState('Anonymous User');
@@ -18,54 +21,55 @@ const CompanyProf = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [userRole, setUserRole] = useState("");
+  const [editingReview, setEditingReview] = useState(null);
+  const reviewsRef = useRef(null);
 
   useEffect(() => {
     const fetchCompanyDetails = async () => {
       try {
         const userId = localStorage.getItem('userId');
         const role = localStorage.getItem('userRole');
+        const storedAuth = localStorage.getItem('auth');
+        
         setUserRole(role);
-        if (!userId) {
+        if (!userId || !storedAuth) {
           navigate('/login');
           return;
         }
 
-        // First try to get from local storage
-        const profiles = JSON.parse(localStorage.getItem('companyProfiles')) || [];
-        let selectedCompany = null;
+        const { token } = JSON.parse(storedAuth);
 
-        if (id) {
-          // Try to find by exact ID match first
-          selectedCompany = profiles.find(profile => profile._id === id || profile.id === id);
-        } else {
-          selectedCompany = JSON.parse(localStorage.getItem('companyProfile'));
-        }
-
-        // If found in localStorage and user is authorized
-        if (selectedCompany) {
-          if (selectedCompany.createdBy && selectedCompany.createdBy !== userId) {
-            // Redirect to the user's own profile or setup page
-            const userProfile = profiles.find((profile) => profile.createdBy === userId);
-            if (userProfile) {
-              navigate(`/company-prof/${userProfile._id || userProfile.id}`);
-            } else {
-              navigate('/company-setup');
+        // Fetch company details
+        const response = await axios.get(
+          `http://localhost:5000/api/company/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
             }
-            return;
           }
-          setCompany(selectedCompany);
-          const savedReviews = JSON.parse(localStorage.getItem(`companyReviews_${selectedCompany._id || selectedCompany.id}`)) || [];
-          setReviews(savedReviews);
-          setLoading(false);
-          return;
-        }
-
-        // If not in localStorage, try API
-        const response = await axios.get(`http://localhost:5000/api/company/${id}`);
+        );
         setCompany(response.data);
-        const savedReviews = JSON.parse(localStorage.getItem(`companyReviews_${id}`)) || [];
-        setReviews(savedReviews);
+
+        // Fetch reviews
+        const reviewsResponse = await axios.get(
+          `http://localhost:5000/api/reviews/company/${id}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`
+            }
+          }
+        );
+        
+        setReviews(reviewsResponse.data || []);
         setLoading(false);
+
+        // Scroll to reviews if coming from a notification
+        if (location.state?.scrollToReviews && reviewsRef.current) {
+          console.log('Scrolling to reviews section');
+          setTimeout(() => {
+            reviewsRef.current.scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        }
       } catch (error) {
         console.error('Error fetching company details:', error);
         setError(error.response?.data?.message || 'Error loading company details');
@@ -76,32 +80,120 @@ const CompanyProf = () => {
     fetchCompanyDetails();
     const userName = localStorage.getItem('userName') || 'Anonymous User';
     setCurrentUser(userName);
-  }, [id, navigate]);
+  }, [id, navigate, location]);
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (rating < 1 || rating > 5) {
-      alert('Please select a rating between 1 and 5.');
+      toast.error('Please select a rating between 1 and 5.');
       return;
     }
     if (!comment.trim()) {
-      alert('Please enter a comment.');
+      toast.error('Please enter a comment.');
       return;
     }
-    const newReview = {
-      _id: Date.now().toString(),
-      userName: currentUser,
-      rating: rating,
-      comment: comment,
-      createdAt: new Date().toISOString(),
-    };
-    const updatedReviews = [newReview, ...reviews];
-    setReviews(updatedReviews);
-    localStorage.setItem(`companyReviews_${company._id || company.id}`, JSON.stringify(updatedReviews));
-    setRating(0);
-    setHover(0);
-    setComment('');
-    setShowReviewForm(false);
+
+    try {
+      const storedAuth = localStorage.getItem("auth");
+      if (!storedAuth) {
+        toast.error('Please log in to submit a review');
+        return;
+      }
+
+      const { token, user } = JSON.parse(storedAuth);
+      
+      if (editingReview && !editingReview._id) {
+        console.error('Invalid editing review:', editingReview);
+        toast.error('Cannot edit this review at the moment');
+        return;
+      }
+
+      // If editing, update the review; otherwise create a new one
+      const url = editingReview 
+        ? `http://localhost:5000/api/reviews/${editingReview._id}`
+        : 'http://localhost:5000/api/reviews';
+
+      console.log('Review operation:', {
+        isEditing: !!editingReview,
+        reviewId: editingReview?._id,
+        userId: user?._id,
+        url,
+        method: editingReview ? 'put' : 'post',
+        data: editingReview ? { rating, comment } : { companyId: company._id, rating, comment }
+      });
+      
+      const method = editingReview ? 'put' : 'post';
+      const data = editingReview 
+        ? { rating, comment }
+        : { companyId: company._id, rating, comment };
+
+      const response = await axios[method](url, data, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Review response:', response.data);
+
+      // Fetch updated reviews
+      const reviewsResponse = await axios.get(
+        `http://localhost:5000/api/reviews/company/${company._id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setReviews(reviewsResponse.data || []);
+      setRating(0);
+      setHover(0);
+      setComment('');
+      setShowReviewForm(false);
+      setEditingReview(null);
+
+      // Show success message
+      toast.success(editingReview ? 'Review updated successfully!' : 'Review submitted successfully!', {
+        position: "top-center",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error with review:', error);
+      console.error('Full error details:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        data: error.response?.data,
+        url: error.config?.url,
+        method: error.config?.method,
+        reviewId: editingReview?._id
+      });
+      toast.error(error.response?.data?.message || 'Failed to process review');
+    }
+  };
+
+  const handleEditReview = (review) => {
+    console.log('Editing review:', {
+      review,
+      reviewId: review?._id,
+      userId: review?.userId,
+      currentUserId: JSON.parse(localStorage.getItem('auth'))?.user?._id
+    });
+    
+    if (!review || !review._id) {
+      console.error('Invalid review object:', review);
+      toast.error('Cannot edit this review at the moment');
+      return;
+    }
+    setEditingReview(review);
+    setRating(review.rating);
+    setComment(review.comment);
+    setShowReviewForm(true);
+    reviewsRef.current.scrollIntoView({ behavior: 'smooth' });
   };
 
   if (loading) return <div>Loading...</div>;
@@ -111,6 +203,7 @@ const CompanyProf = () => {
   return (
     <>
       <Header />
+      <ToastContainer />
       <br/>
       <br/>
       <br/>
@@ -133,12 +226,15 @@ const CompanyProf = () => {
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-8 transform transition-all duration-300 hover:shadow-2xl">
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-semibold text-teal-800 border-b-2 border-teal-200 pb-2">About {company.name}</h2>
-              {userRole === "employer" && (
+              {(
+                (company.userId && (
+                  company.userId === localStorage.getItem('userId') ||
+                  (company.userId._id && company.userId._id === localStorage.getItem('userId'))
+                )) ||
+                (company.createdBy && company.createdBy === localStorage.getItem('userId'))
+              ) && (
                 <button
-                  onClick={() => {
-                    console.log('Edit button clicked, company ID:', company._id || company.id);
-                    navigate(`/EditCompanyProfile/${company._id || company.id}`);
-                  }}
+                  onClick={() => navigate(`/EditCompanyProfile/${company._id || company.id}`)}
                   className="bg-teal-600 text-white font-semibold py-2 px-6 rounded-lg shadow-md hover:bg-teal-700 transition duration-300"
                   disabled={!company}
                 >
@@ -210,7 +306,13 @@ const CompanyProf = () => {
             </div>
           </div>
 
-          <div className="bg-white rounded-2xl shadow-xl p-8">
+          <div 
+            ref={reviewsRef}
+            className="bg-white rounded-2xl shadow-xl p-8 scroll-mt-24"
+          >
+            <h2 className="text-2xl font-semibold text-teal-800 mb-6 border-b-2 border-teal-200 pb-2">
+              Reviews
+            </h2>
             {reviews.length === 0 && !showReviewForm ? (
               <div className="text-center">
                 <p className="text-gray-600 italic mb-4">No reviews yet for this company.</p>
@@ -223,55 +325,49 @@ const CompanyProf = () => {
               </div>
             ) : (
               <>
-                <h2 className="text-2xl font-semibold text-teal-800 mb-6 border-b-2 border-teal-200 pb-2">Reviews</h2>
                 {showReviewForm && (
                   <form onSubmit={handleReviewSubmit} className="mb-8 space-y-4">
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-2">Your Rating</label>
-                      <div className="flex space-x-1">
-                        {[...Array(5)].map((star, index) => {
-                          const ratingValue = index + 1;
-                          return (
-                            <label key={index}>
-                              <input
-                                type="radio"
-                                name="rating"
-                                value={ratingValue}
-                                onClick={() => setRating(ratingValue)}
-                                className="hidden"
-                              />
-                              <FaStar
-                                className="cursor-pointer transition-colors duration-200"
-                                size={30}
-                                color={ratingValue <= (hover || rating) ? '#FFD700' : '#e4e5e9'}
-                                onMouseEnter={() => setHover(ratingValue)}
-                                onMouseLeave={() => setHover(rating)}
-                              />
-                            </label>
-                          );
-                        })}
-                      </div>
+                    <div className="flex items-center space-x-2">
+                      {[...Array(5)].map((_, index) => {
+                        const ratingValue = index + 1;
+                        return (
+                          <button
+                            type="button"
+                            key={ratingValue}
+                            className={`text-3xl focus:outline-none transition-colors ${
+                              ratingValue <= (hover || rating) ? 'text-yellow-400' : 'text-gray-300'
+                            }`}
+                            onClick={() => setRating(ratingValue)}
+                            onMouseEnter={() => setHover(ratingValue)}
+                            onMouseLeave={() => setHover(0)}
+                          >
+                            <FaStar />
+                          </button>
+                        );
+                      })}
                     </div>
-                    <div className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-700 mb-1">Your Comment</label>
-                      <textarea
-                        value={comment}
-                        onChange={(e) => setComment(e.target.value)}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-400 focus:outline-none transition"
-                        rows="4"
-                        required
-                      />
-                    </div>
+                    <textarea
+                      value={comment}
+                      onChange={(e) => setComment(e.target.value)}
+                      placeholder="Share your experience..."
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                      rows="4"
+                    ></textarea>
                     <div className="flex space-x-4">
                       <button
                         type="submit"
                         className="bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-300 transform hover:scale-105"
                       >
-                        Submit Review
+                        {editingReview ? 'Update Review' : 'Submit Review'}
                       </button>
                       <button
                         type="button"
-                        onClick={() => setShowReviewForm(false)}
+                        onClick={() => {
+                          setShowReviewForm(false);
+                          setEditingReview(null);
+                          setRating(0);
+                          setComment('');
+                        }}
                         className="bg-gray-300 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-400 transition duration-300"
                       >
                         Cancel
@@ -279,41 +375,70 @@ const CompanyProf = () => {
                     </div>
                   </form>
                 )}
-                {reviews.length === 0 ? (
-                  <p className="text-gray-600 italic">No reviews yet. Be the first to share your experience!</p>
-                ) : (
-                  <div className="space-y-6">
-                    {reviews.map((review) => (
+                <div className="space-y-6">
+                  {reviews.map((review) => {
+                    const authData = JSON.parse(localStorage.getItem('auth'));
+                    const currentUserId = authData?.userId || authData?.user?._id || authData?.user?.userId;
+                    const reviewUserId = (typeof review.userId === 'object' && review.userId !== null)
+                      ? String(review.userId._id)
+                      : String(review.userId);
+                    const isUserReview = reviewUserId && currentUserId && reviewUserId === String(currentUserId);
+                    
+                    console.log('Review mapping:', {
+                      reviewId: review._id,
+                      reviewUserId: review.userId,
+                      currentUserId: currentUser?._id,
+                      isUserReview
+                    });
+
+                    return (
                       <div
                         key={review._id}
                         className="bg-teal-50 p-6 rounded-lg shadow-md transform transition-all duration-300 hover:-translate-y-1 hover:shadow-lg"
                       >
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-semibold text-teal-800">{review.userName}</p>
-                          <div className="flex items-center">
-                            {[...Array(5)].map((star, index) => (
-                              <FaStar
-                                key={index}
-                                size={20}
-                                color={index < Math.round(review.rating) ? '#FFD700' : '#e4e5e9'}
-                              />
-                            ))}
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center">
+                              {[...Array(5)].map((star, index) => (
+                                <FaStar
+                                  key={index}
+                                  size={20}
+                                  color={index < Math.round(review.rating) ? '#FFD700' : '#e4e5e9'}
+                                />
+                              ))}
+                            </div>
+                            {isUserReview && (
+                              <button
+                                onClick={() => handleEditReview(review)}
+                                className="text-teal-600 hover:text-teal-800 transition-colors"
+                              >
+                                Edit
+                              </button>
+                            )}
                           </div>
                         </div>
                         <p className="text-gray-600 mb-2">{review.comment}</p>
-                        <p className="text-sm text-gray-500">{new Date(review.createdAt).toLocaleDateString()}</p>
+                        <p className="text-sm text-gray-500">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </p>
                       </div>
-                    ))}
-                    {!showReviewForm && (
-                      <button
-                        onClick={() => setShowReviewForm(true)}
-                        className="mt-4 bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-300 transform hover:scale-105"
-                      >
-                        Add Another Review
-                      </button>
-                    )}
-                  </div>
-                )}
+                    );
+                  })}
+                  {!showReviewForm && (
+                    <button
+                      onClick={() => {
+                        setShowReviewForm(true);
+                        setEditingReview(null);
+                        setRating(0);
+                        setComment('');
+                      }}
+                      className="mt-4 bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-300 transform hover:scale-105"
+                    >
+                      Add Another Review
+                    </button>
+                  )}
+                </div>
               </>
             )}
           </div>

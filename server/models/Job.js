@@ -48,8 +48,8 @@ const jobSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'Active', 'Inactive'],
-    default: 'pending'
+    enum: ['Active', 'Inactive'],
+    default: 'Active'
   },
   createdAt: {
     type: Date,
@@ -58,6 +58,38 @@ const jobSchema = new mongoose.Schema({
   isActive: {
     type: Boolean,
     default: true
+  },
+  applications: {
+    type: [{
+      applicantId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+      },
+      applicantName: String,
+      resume: String,
+      status: {
+        type: String,
+        enum: [
+          'APPLIED',
+          'REVIEWED',
+          'SHORTLISTED',
+          'INTERVIEW_SCHEDULED',
+          'INTERVIEWED',
+          'ACCEPTED',
+          'REJECTED'
+        ],
+        default: 'APPLIED'
+      },
+      appliedDate: {
+        type: Date,
+        default: Date.now
+      }
+    }],
+    default: []
+  },
+  totalApplicants: {
+    type: Number,
+    default: 0
   }
 }, { timestamps: true });
 

@@ -32,7 +32,7 @@ const upload = multer({
       cb(new Error('Invalid file type. Only JPEG, PNG, and PDF are allowed.'));
     }
   },
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
 });
 
 // Authentication Routes

@@ -11,8 +11,20 @@ const ApplyPage = () => {
   const [resume, setResume] = useState(null);
   const [loading, setLoading] = useState(true);
   const [coverLetterFile, setCoverLetterFile] = useState(null);
+  const [userName, setUserName] = useState("");
 
   const userRole = localStorage.getItem("userRole");
+
+  useEffect(() => {
+    // Get user info from localStorage
+    const storedName = localStorage.getItem("userName");
+    if (!storedName) {
+      alert("User information not found. Please log in again.");
+      navigate("/Login");
+      return;
+    }
+    setUserName(storedName);
+  }, [navigate]);
 
   // ✅ Define fetchJob with useCallback to prevent ESLint errors
   const fetchJob = useCallback(async () => {
@@ -34,37 +46,81 @@ const ApplyPage = () => {
     }
 
     fetchJob();
-  }, [id, navigate, userRole, fetchJob]); // ✅ Include fetchJob in dependencies
+  }, [id, navigate, userRole, fetchJob]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const token = localStorage.getItem("auth");
-      const userId = localStorage.getItem("userId");
-
-      if (!token || !userId) {
+      const authData = localStorage.getItem("auth");
+      if (!authData) {
         alert("Please log in to apply for this job.");
         navigate("/Login");
         return;
       }
 
-      const data = new FormData();
-      data.append("jobId", id);
-      data.append("userId", userId);
-      data.append("coverLetter", coverLetter);
-      data.append("coverLetterFile", coverLetterFile);
-      data.append("resume", resume);
+      const { token } = JSON.parse(authData);
+      const userId = localStorage.getItem("userId");
 
-      await axios.post("http://localhost:5000/api/applications", data, {
-        headers: { "Content-Type": "multipart/form-data", Authorization: `Bearer ${token}` },
+      if (!token || !userId || !userName) {
+        alert("Please log in to apply for this job.");
+        navigate("/Login");
+        return;
+      }
+
+      if (!resume) {
+        alert("Please upload your resume.");
+        return;
+      }
+
+      // FIX: Require at least one cover letter (text or file)
+      if (!coverLetter && !coverLetterFile) {
+        alert("Please provide a cover letter (text or PDF file).");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("jobId", id);
+      formData.append("userId", userId);
+      formData.append("applicantName", userName);
+      formData.append("coverLetter", coverLetter);
+      if (coverLetterFile) {
+        formData.append("coverLetterFile", coverLetterFile);
+      }
+      formData.append("resume", resume);
+
+      // Debug: Log all form data entries
+      console.log('Form data entries:');
+      for (let pair of formData.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      console.log('Submitting application with data:', {
+        jobId: id,
+        userId,
+        applicantName: userName,
+        hasResume: !!resume,
+        hasCoverLetter: !!coverLetter,
+        hasCoverLetterFile: !!coverLetterFile
       });
 
-      alert("Application submitted successfully!");
+      const response = await axios.post("http://localhost:5000/api/applications", formData, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+      });
 
-      // 🔄 ✅ Fetch updated job details to update total applicants count
-      fetchJob(); // ✅ Now fetchJob is properly defined
+      console.log('Application submission response:', response.data);
+
+      if (response.status === 201) {
+        alert("Application submitted successfully!");
+        navigate('/profile');
+      } else {
+        alert("Failed to submit application. Please try again.");
+      }
     } catch (error) {
       console.error("Error submitting application:", error);
+      console.error("Error details:", error.response?.data);
       alert("Failed to submit application: " + (error.response?.data?.message || error.message));
     }
   };

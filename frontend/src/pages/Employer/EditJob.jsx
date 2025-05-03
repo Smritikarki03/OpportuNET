@@ -148,7 +148,8 @@ const EditJob = () => {
         experienceLevel: jobData.experienceLevel,
         noOfPositions: parseInt(jobData.noOfPositions),
         company: jobData.company.trim(),
-        deadline: jobData.deadline
+        deadline: jobData.deadline,
+        status: 'Active' // Explicitly set status to Active
       };
 
       const response = await axios.put(`${API_BASE_URL}/jobs/${id}`, updateData, {
@@ -165,12 +166,12 @@ const EditJob = () => {
       console.log('Update response:', response.data);
       
       // Show success message
-      alert('Job updated successfully!');
+      alert('Job updated and activated successfully!');
       
-      // Navigate to profile page
+      // Navigate to profile page with refresh flag
       navigate('/profile', { 
         state: { 
-          updateMessage: 'Job updated successfully',
+          updateMessage: 'Job updated and activated successfully',
           refresh: true 
         } 
       });

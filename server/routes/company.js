@@ -3,6 +3,7 @@ const router = express.Router();
 const Company = require('../models/Company');
 const User = require('../models/User');
 const Review = require('../models/Review');
+const Notification = require('../models/Notification');
 const { authenticate } = require('../middleware/authMiddleware');
 const path = require('path');
 const upload = require('../middleware/upload');
@@ -88,6 +89,12 @@ router.post('/', authenticate, upload.single('logo'), async (req, res) => {
     await User.findByIdAndUpdate(userId, { 
       companyId: company._id,
       isCompanySetup: true 
+    });
+
+    console.log('Company created with owner:', {
+      companyId: company._id,
+      ownerId: userId,
+      companyName: company.name
     });
 
     res.status(201).json({ message: 'Company profile created', company });
@@ -223,41 +230,6 @@ router.delete('/:id', authenticate, async (req, res) => {
     res.json({ message: 'Company profile deleted successfully' });
   } catch (err) {
     console.error('Error deleting company:', err);
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
-
-// Submit a review
-router.post('/reviews', authenticate, async (req, res) => {
-  try {
-    const { companyId, rating, comment } = req.body;
-    const userId = req.user.id;
-
-    if (!companyId || !rating || !comment) {
-      return res.status(400).json({ message: 'All fields are required' });
-    }
-    if (rating < 1 || rating > 5) {
-      return res.status(400).json({ message: 'Rating must be between 1 and 5' });
-    }
-
-    const company = await Company.findById(companyId);
-    if (!company) {
-      return res.status(404).json({ message: 'Company not found' });
-    }
-
-    const user = await User.findById(userId);
-    const review = new Review({
-      companyId,
-      userId,
-      userName: user.name,
-      rating,
-      comment,
-    });
-
-    await review.save();
-    res.status(201).json({ message: 'Review submitted', review });
-  } catch (err) {
-    console.error('Error submitting review:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });

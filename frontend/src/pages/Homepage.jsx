@@ -22,16 +22,68 @@ const HomePage = () => {
   useEffect(() => {
     const fetchNewJobs = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : {};
-        const response = await axios.get('http://localhost:5000/api/jobs', config);
-        console.log('Fetched new jobs:', response.data);
-        setNewJobs(response.data);
-        setFilteredJobs(response.data);
+        console.log('Starting fetchNewJobs...');
+        let response;
+        const authData = localStorage.getItem('auth');
+        
+        if (authData) {
+          try {
+        const parsedAuthData = JSON.parse(authData);
+            if (!parsedAuthData || !parsedAuthData.token) {
+              throw new Error('Invalid auth data');
+        }
+
+            console.log('Making authenticated API request...');
+            response = await axios.get('http://localhost:5000/api/jobs', {
+          headers: {
+                'Authorization': `Bearer ${parsedAuthData.token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+            console.log('Authenticated request successful');
+          } catch (authError) {
+            console.error('Error with authenticated request:', authError);
+            // Clear invalid auth data
+            if (authError.response?.status === 401) {
+              console.log('Clearing invalid auth data...');
+          localStorage.removeItem('auth');
+          localStorage.removeItem('userRole');
+          localStorage.removeItem('userId');
+          localStorage.removeItem('userName');
+          setIsLoggedIn(false);
+          setUserRole('');
+          setUserId(null);
+        }
+          }
+        }
+
+        // If no auth data or authenticated request failed, try public endpoint
+        if (!response?.data) {
+          console.log('Making public API request');
+          response = await axios.get('http://localhost:5000/api/jobs/public');
+        }
+
+        if (response?.data) {
+          console.log('Fetched jobs:', response.data);
+          console.log('Number of jobs fetched:', response.data.length);
+          setNewJobs(response.data);
+          setFilteredJobs(response.data);
+        } else {
+          console.error('No data received from either endpoint');
+          // Don't clear existing jobs if we already have them
+          if (!newJobs.length) {
+            setNewJobs([]);
+            setFilteredJobs([]);
+          }
+        }
       } catch (error) {
-        console.error('Error fetching new jobs:', error);
+        console.error('Error fetching jobs:', error);
+        // Don't clear existing jobs if we already have them
+        if (!newJobs.length) {
+        setNewJobs([]);
+        setFilteredJobs([]);
+        }
       }
     };
 

@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { FaTachometerAlt, FaBriefcase, FaUsers, FaFileAlt, FaSignOutAlt } from "react-icons/fa";
+import { FaTachometerAlt, FaBriefcase, FaUsers, FaFileAlt, FaSignOutAlt, FaClipboardList } from "react-icons/fa";
 
-const Sidebar = () => {
+const Sidebar = ({ children }) => {
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -17,58 +17,75 @@ const Sidebar = () => {
       </div>
       <nav className="flex-1 overflow-y-auto py-8">
         <ul className="space-y-4">
-          <li>
-            <NavLink
-              to="/AdminDB"
-              className={({ isActive }) =>
-                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
-                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
-                }`
-              }
-            >
-              <FaTachometerAlt className="h-6 w-6" />
-              Dashboard
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/ManageJob"
-              className={({ isActive }) =>
-                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
-                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
-                }`
-              }
-            >
-              <FaBriefcase className="h-6 w-6" />
-              Manage Jobs
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/ManageUsers"
-              className={({ isActive }) =>
-                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
-                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
-                }`
-              }
-            >
-              <FaUsers className="h-6 w-6" />
-              User Management
-            </NavLink>
-          </li>
-          <li>
-            <NavLink
-              to="/reviews"
-              className={({ isActive }) =>
-                `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
-                  isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
-                }`
-              }
-            >
-              <FaFileAlt className="h-6 w-6" />
-              Reviews
-            </NavLink>
-          </li>
+          {children || (
+            <>
+              <li>
+                <NavLink
+                  to="/AdminDB"
+                  className={({ isActive }) =>
+                    `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                      isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                    }`
+                  }
+                >
+                  <FaTachometerAlt className="h-6 w-6" />
+                  Dashboard
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/ManageJob"
+                  className={({ isActive }) =>
+                    `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                      isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                    }`
+                  }
+                >
+                  <FaBriefcase className="h-6 w-6" />
+                  Manage Jobs
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/ManageUsers"
+                  className={({ isActive }) =>
+                    `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                      isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                    }`
+                  }
+                >
+                  <FaUsers className="h-6 w-6" />
+                  User Management
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/admin/applications"
+                  className={({ isActive }) =>
+                    `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                      isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                    }`
+                  }
+                >
+                  <FaClipboardList className="h-6 w-6" />
+                  Applications
+                </NavLink>
+              </li>
+              <li>
+                <NavLink
+                  to="/Reviews"
+                  className={({ isActive }) =>
+                    `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
+                      isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
+                    }`
+                  }
+                >
+                  <FaFileAlt className="h-6 w-6" />
+                  Reviews
+                </NavLink>
+              </li>
+            </>
+          )}
         </ul>
       </nav>
       {/* Logout Button */}

@@ -139,7 +139,7 @@ const JobPosting = () => {
       <Header />
       <br />
       <br />
-      <br />
+      <br/>
       <br />
       <br />
       

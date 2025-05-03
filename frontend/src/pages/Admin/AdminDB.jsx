@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 import { 
-  FaTachometerAlt, 
-  FaBriefcase, 
-  FaUsers, 
-  FaFileAlt, 
   FaBell,
   FaChartLine,
   FaUserCheck,
@@ -13,7 +9,10 @@ import {
   FaSearch,
   FaFilter,
   FaUserTie,
-  FaGraduationCap
+  FaGraduationCap,
+  FaUsers,
+  FaBriefcase,
+  FaFileAlt
 } from "react-icons/fa";
 import Sidebar from "../../Components/Sidebar";
 import { Pie, Bar } from 'react-chartjs-2';
@@ -226,8 +225,6 @@ const AdminDashboard = () => {
   return (
     <div className="flex min-h-screen bg-gray-50">
       <Sidebar />
-      
-      {/* Main Content */}
       <main className="flex-1 ml-64 min-h-screen overflow-auto">
         <div className="p-8">
           {/* Header */}

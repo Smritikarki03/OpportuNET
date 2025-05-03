@@ -8,7 +8,8 @@ const adminRoutes = require('./routes/adminroute');
 const jobRoutes = require('./routes/jobs');
 const applicationRoutes = require('./routes/applications');
 const companyRoutes = require('./routes/company');
-const companyReviewRoutes = require('./routes/companyReview');
+const reviewsRouter = require('./routes/reviews');
+const notificationRoutes = require('./routes/notifications');
 const { authenticate } = require('./middleware/authMiddleware');
 const app = express();
 const path = require('path');
@@ -74,7 +75,8 @@ app.use('/api/adminroute', adminRoutes);
 app.use('/api/jobs', jobRoutes);
 app.use('/api/applications', applicationRoutes);
 app.use('/api/company', companyRoutes);
-app.use('/api/company-review', companyReviewRoutes);
+app.use('/api/reviews', reviewsRouter);
+app.use('/api/notifications', notificationRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

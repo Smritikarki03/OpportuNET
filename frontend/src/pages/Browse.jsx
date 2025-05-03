@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
 import axios from 'axios';
+import { useAuth } from "../context/auth";
 
 const BrowseJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -12,6 +13,7 @@ const BrowseJobs = () => {
   const [salaryRange, setSalaryRange] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [auth] = useAuth();
 
   const locationOptions = [
     "All Locations",
@@ -27,28 +29,45 @@ const BrowseJobs = () => {
   useEffect(() => {
     const fetchJobs = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = token
-          ? { headers: { Authorization: `Bearer ${token}` } }
-          : {};
-        const response = await axios.get('http://localhost:5000/api/jobs', config);
+        setLoading(true);
+        let response;
+
+        // Try authenticated endpoint first if user is logged in
+        if (auth?.token) {
+          try {
+            response = await axios.get('http://localhost:5000/api/jobs', {
+              headers: {
+                'Authorization': `Bearer ${auth.token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+          } catch (authError) {
+            console.error('Error fetching authenticated jobs:', authError);
+            // If authenticated request fails, fall back to public endpoint
+            response = await axios.get('http://localhost:5000/api/jobs/public');
+          }
+        } else {
+          // If no auth token, use public endpoint
+          response = await axios.get('http://localhost:5000/api/jobs/public');
+        }
+
         console.log('Fetched jobs:', response.data);
         setJobs(response.data);
+        setError(null);
         setLoading(false);
       } catch (err) {
-        setError('Failed to fetch jobs');
-        setLoading(false);
         console.error('Error fetching jobs:', err);
+        setError('Failed to fetch jobs. Please try again later.');
+        setLoading(false);
       }
     };
 
     fetchJobs();
-  }, []);
+  }, [auth]);
 
   const handleSaveForLater = async (jobId) => {
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
+      if (!auth?.token) {
         alert('Please log in to save jobs.');
         return;
       }
@@ -56,7 +75,7 @@ const BrowseJobs = () => {
       await axios.post(
         'http://localhost:5000/api/saved-jobs',
         { jobId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${auth.token}` } }
       );
       alert('Job saved for later!');
     } catch (err) {

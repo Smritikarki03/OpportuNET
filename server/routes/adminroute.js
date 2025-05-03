@@ -3,6 +3,7 @@ const { adminApproveRejectEmployer, getNotifications, markNotificationAsRead, ge
 const { authenticateAdmin } = require("../middleware/authMiddleware");
 const Job = require("../models/Job");
 const User = require("../models/User");
+const Application = require('../models/Application');
 
 const router = express.Router();
 
@@ -111,5 +112,34 @@ router.get("/notifications", authenticateAdmin, getNotifications);
 
 // Mark notification as read
 router.put("/notifications/:id/read", authenticateAdmin, markNotificationAsRead);
+
+// Get all applications for admin
+router.get('/applications', authenticateAdmin, async (req, res) => {
+  try {
+    // Fetch all applications and populate job and user info, including company from job
+    const applications = await Application.find()
+      .populate({
+        path: 'jobId',
+        select: 'title company'
+      })
+      .populate('userId', 'name email');
+    // Format for frontend
+    const formatted = applications.map(app => ({
+      _id: app._id,
+      jobTitle: app.jobId?.title || 'N/A',
+      company: app.jobId?.company || 'N/A',
+      applicantName: app.userId?.name || 'N/A',
+      applicantEmail: app.userId?.email || 'N/A',
+      status: app.status?.toLowerCase() || 'pending',
+      appliedDate: app.appliedDate,
+      resumeUrl: app.resume,
+      coverLetterUrl: app.coverLetterFile
+    }));
+    res.json({ applications: formatted });
+  } catch (error) {
+    console.error('Error fetching applications:', error);
+    res.status(500).json({ message: 'Error fetching applications', error: error.message });
+  }
+});
 
 module.exports = router;

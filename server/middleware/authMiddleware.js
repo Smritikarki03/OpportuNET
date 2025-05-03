@@ -12,6 +12,7 @@ const authenticate = async (req, res, next) => {
       return res.status(401).json({ message: 'Access denied. No token provided.' });
     }
 
+    try {
     console.log('Auth Middleware - Token received:', token.substring(0, 20) + '...');
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     console.log('Auth Middleware - Decoded token:', decoded);
@@ -35,9 +36,18 @@ const authenticate = async (req, res, next) => {
       role: req.user.role
     });
     next();
+    } catch (jwtError) {
+      console.error('JWT Verification Error:', jwtError);
+      return res.status(401).json({ message: 'Invalid token' });
+    }
   } catch (error) {
     console.error('Authentication error:', error);
-    res.status(401).json({ message: 'Invalid token' });
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ 
+      message: 'Authentication error', 
+      error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 };
 
