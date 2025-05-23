@@ -211,19 +211,18 @@ const ManageUsers = () => {
         navigate('/login');
         return;
       }
-      const response = await fetch(`http://localhost:5000/api/adminroute/users/${id}`, {
-        method: 'DELETE',
+      // Use the approve-reject endpoint to trigger rejection email and deletion
+      const response = await fetch('http://localhost:5000/api/adminroute/approve-reject', {
+        method: 'POST',
         headers: {
           'Authorization': `Bearer ${auth.token}`,
           'Content-Type': 'application/json'
-        }
+        },
+        body: JSON.stringify({ employerId: id, action: 'reject' })
       });
+      const data = await response.json();
       if (!response.ok) {
-        let errorMessage = 'Failed to reject employer';
-        try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorMessage;
-        } catch (e) {}
+        let errorMessage = data.message || 'Failed to reject employer';
         throw new Error(errorMessage);
       }
       setUsers(users.filter(user => user._id !== id));
