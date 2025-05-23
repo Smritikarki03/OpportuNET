@@ -69,134 +69,59 @@ function CompanyProfile() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header Section */}
-      <div className="bg-teal-600 text-white py-6 px-8 shadow-lg">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center space-x-6">
-            {profile.logo && (
-              <img
-                src={profile.logo}
-                alt={`${profile.name} logo`}
-                className="w-24 h-24 object-contain rounded-lg bg-white p-2"
-              />
+      <div className="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow p-8 flex flex-col items-center">
+          {profile.logo && (
+            <img
+              src={profile.logo}
+              alt={`${profile.name} logo`}
+              className="w-28 h-28 object-contain rounded-full bg-gray-100 mb-4"
+            />
+          )}
+          <h1 className="text-3xl font-bold text-gray-900 mb-1 text-center">{profile.name}</h1>
+          <p className="text-lg text-gray-600 mb-6 text-center">{profile.industry}</p>
+          {/* Info Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full mb-6 justify-items-center">
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500">Industry</h3>
+              <p className="mt-1">{profile.industry}</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500">Location</h3>
+              <p className="mt-1">{profile.location}</p>
+            </div>
+            <div className="text-center">
+              <h3 className="text-sm font-medium text-gray-500">Established</h3>
+              <p className="mt-1">{new Date(profile.establishedDate).toLocaleDateString()}</p>
+            </div>
+            {profile.employeeCount && (
+              <div className="text-center">
+                <h3 className="text-sm font-medium text-gray-500">Employees</h3>
+                <p className="mt-1">{profile.employeeCount}</p>
+              </div>
             )}
-            <div>
-              <h1 className="text-3xl font-bold">{profile.name}</h1>
-              <p className="mt-1 text-lg opacity-90">{profile.industry}</p>
-              {averageRating > 0 && (
-                <div className="flex items-center mt-2">
-                  <div className="flex">
-                    {[...Array(5)].map((_, index) => (
-                      <FaStar
-                        key={index}
-                        color={index < averageRating ? "#ffc107" : "#e4e5e9"}
-                        size={20}
-                      />
-                    ))}
-                  </div>
-                  <span className="ml-2 text-lg">({averageRating})</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Company Details */}
-          <div className="md:col-span-2 space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">About Us</h2>
-              <p className="text-gray-700">{profile.description}</p>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Company Information</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Industry</h3>
-                  <p className="mt-1">{profile.industry}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Location</h3>
-                  <p className="mt-1">{profile.location}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Established</h3>
-                  <p className="mt-1">{new Date(profile.establishedDate).toLocaleDateString()}</p>
-                </div>
-                {profile.employeeCount && (
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">Employees</h3>
-                    <p className="mt-1">{profile.employeeCount}</p>
-                  </div>
-                )}
-                {profile.website && (
-                  <div className="md:col-span-2">
-                    <h3 className="text-sm font-medium text-gray-500">Website</h3>
-                    <a
-                      href={profile.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-1 text-teal-600 hover:text-teal-800"
-                    >
-                      {profile.website}
-                    </a>
-                  </div>
-                )}
+            {profile.website && (
+              <div className="md:col-span-2 text-center">
+                <h3 className="text-sm font-medium text-gray-500">Website</h3>
+                <a
+                  href={profile.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-1 text-teal-600 hover:text-teal-800"
+                >
+                  {profile.website}
+                </a>
               </div>
-            </div>
-
-            {/* Reviews Section */}
+            )}
+          </div>
+          {/* Description Section */}
+          <div className="w-full mb-6">
+            <h2 className="text-xl font-semibold mb-2">Description</h2>
+            <p className="text-gray-700">{profile.description}</p>
+          </div>
+          {/* Reviews Section */}
+          <div className="w-full">
             <CompanyReviews companyId={profile._id} />
-          </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6">
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Quick Stats</h2>
-              <div className="space-y-4">
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Total Reviews</h3>
-                  <p className="text-2xl font-semibold">{reviews.length}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium text-gray-500">Average Rating</h3>
-                  <div className="flex items-center">
-                    <div className="flex">
-                      {[...Array(5)].map((_, index) => (
-                        <FaStar
-                          key={index}
-                          color={index < averageRating ? "#ffc107" : "#e4e5e9"}
-                          size={20}
-                        />
-                      ))}
-                    </div>
-                    <span className="ml-2 text-xl font-semibold">{averageRating}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-lg shadow p-6">
-              <h2 className="text-xl font-semibold mb-4">Actions</h2>
-              <div className="space-y-4">
-                <button
-                  onClick={() => navigate(`/EditCompanyProfile/${profile._id}`)}
-                  className="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-700 transition duration-200"
-                >
-                  Edit Profile
-                </button>
-                <button
-                  onClick={() => navigate('/jobs/new')}
-                  className="w-full bg-teal-600 text-white py-2 px-4 rounded-md hover:bg-teal-700 transition duration-200"
-                >
-                  Post a Job
-                </button>
-              </div>
-            </div>
           </div>
         </div>
       </div>

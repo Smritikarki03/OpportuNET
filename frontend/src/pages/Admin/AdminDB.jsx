@@ -52,8 +52,10 @@ const AdminDashboard = () => {
     totalApplications: 0,
     totalJobSeekers: 0,
     totalEmployers: 0,
-    totalUsers: 0
+    totalUsers: 0,
+    pendingNotifications: 0
   });
+  const [adminNotifications, setAdminNotifications] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState("");
   const [filter, setFilter] = useState("all");
@@ -207,6 +209,7 @@ const AdminDashboard = () => {
         }
 
         const statsData = await statsRes.json();
+        console.log('Fetched stats:', statsData);
         setStats(statsData);
         setLoading(false);
       } catch (error) {
@@ -217,10 +220,32 @@ const AdminDashboard = () => {
     };
 
     fetchData();
-    // Refresh data every 30 seconds
-    const interval = setInterval(fetchData, 30000);
+    // Refresh data every 10 seconds instead of 30
+    const interval = setInterval(fetchData, 10000);
     return () => clearInterval(interval);
   }, [auth?.token]);
+
+  // Fetch admin notifications for the bell icon
+  useEffect(() => {
+    const fetchAdminNotifications = async () => {
+      try {
+        const token = auth?.token;
+        if (!token) return;
+        const res = await fetch("http://localhost:5000/api/adminroute/notifications", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        setAdminNotifications(data.notifications || []);
+      } catch (err) {
+        setAdminNotifications([]);
+      }
+    };
+    fetchAdminNotifications();
+    const interval = setInterval(fetchAdminNotifications, 10000);
+    return () => clearInterval(interval);
+  }, [auth?.token]);
+
+  const unreadAdminNotifications = adminNotifications.filter(n => !n.read);
 
   return (
     <div className="flex min-h-screen bg-gray-50">
@@ -234,24 +259,16 @@ const AdminDashboard = () => {
               <p className="text-gray-600">Welcome back! Here's what's happening today.</p>
             </div>
             <div className="flex items-center space-x-4">
-              <div className="relative">
-                <input
-                  type="text"
-                  placeholder="Search..."
-                  className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <FaSearch className="absolute left-3 top-3 text-gray-400" />
-              </div>
               <div
                 className="relative cursor-pointer hover:scale-105 transition-transform"
                 onClick={() => navigate("/AdminNotifications")}
               >
                 <FaBell className="text-3xl text-teal-800" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
-                  3
-                </span>
+                {unreadAdminNotifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                    {unreadAdminNotifications.length}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -305,17 +322,16 @@ const AdminDashboard = () => {
           </div>
 
           {/* Charts Section */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold mb-4">User Distribution</h2>
-              <div className="h-64">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12 mt-4">
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center min-h-[350px]">
+              <h2 className="text-lg font-semibold mb-4 self-start">User Distribution</h2>
+              <div className="flex justify-center items-center w-full" style={{ maxWidth: 350, minHeight: 250 }}>
                 <Pie data={userDistributionData} options={chartOptions} />
               </div>
             </div>
-            
-            <div className="bg-white p-6 rounded-lg shadow-md">
-              <h2 className="text-lg font-semibold mb-4">Job Status</h2>
-              <div className="h-64 flex items-center">
+            <div className="bg-white p-6 rounded-lg shadow-md flex flex-col items-center justify-center min-h-[350px]">
+              <h2 className="text-lg font-semibold mb-4 self-start">Job Status</h2>
+              <div className="flex justify-center items-center w-full" style={{ maxWidth: 350, minHeight: 250 }}>
                 <Bar data={jobStatusBarData} options={barOptions} />
               </div>
             </div>
@@ -372,7 +388,7 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Quick Actions */}
+          {/* Quick Actions
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <button
               onClick={() => navigate("/ManageUsers")}
@@ -416,7 +432,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
             </button>
-          </div>
+          </div> */}
         </div>
       </main>
     </div>

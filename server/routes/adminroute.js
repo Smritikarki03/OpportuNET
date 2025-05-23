@@ -38,10 +38,18 @@ router.delete("/users/:id", authenticateAdmin, async (req, res) => {
 // Get user statistics
 router.get("/user-stats", authenticateAdmin, async (req, res) => {
   try {
+    // Auto-update expired jobs to Inactive
+    const now = new Date();
+    await Job.updateMany(
+      { status: 'Active', applicationDeadline: { $lt: now } },
+      { $set: { status: 'Inactive' } }
+    );
+
     // Get counts for different user types
-    const [totalJobSeekers, totalEmployers] = await Promise.all([
+    const [totalJobSeekers, totalEmployers, pendingEmployers] = await Promise.all([
       User.countDocuments({ role: 'jobseeker' }),
-      User.countDocuments({ role: 'employer' })
+      User.countDocuments({ role: 'employer' }),
+      User.countDocuments({ role: 'employer', isApproved: false })
     ]);
 
     // Get job statistics
@@ -52,26 +60,7 @@ router.get("/user-stats", authenticateAdmin, async (req, res) => {
     // Get total applications
     let totalApplications = 0;
     try {
-      const applicationStats = await Job.aggregate([
-        {
-          $project: {
-            applicationCount: {
-              $cond: {
-                if: { $isArray: "$applications" },
-                then: { $size: "$applications" },
-                else: 0
-              }
-            }
-          }
-        },
-        {
-          $group: {
-            _id: null,
-            totalApplications: { $sum: "$applicationCount" }
-          }
-        }
-      ]);
-      totalApplications = applicationStats[0]?.totalApplications || 0;
+      totalApplications = await Application.countDocuments();
     } catch (error) {
       console.error('Error calculating total applications:', error);
     }
@@ -82,7 +71,8 @@ router.get("/user-stats", authenticateAdmin, async (req, res) => {
       activeJobs,
       inactiveJobs,
       totalApplications,
-      totalUsers: totalJobSeekers + totalEmployers
+      totalUsers: totalJobSeekers + totalEmployers,
+      pendingNotifications: pendingEmployers
     });
   } catch (error) {
     console.error('Error in user-stats route:', error);
@@ -133,12 +123,38 @@ router.get('/applications', authenticateAdmin, async (req, res) => {
       status: app.status?.toLowerCase() || 'pending',
       appliedDate: app.appliedDate,
       resumeUrl: app.resume,
-      coverLetterUrl: app.coverLetterFile
+      coverLetterUrl: app.coverLetterFile,
+      coverLetter: app.coverLetter
     }));
     res.json({ applications: formatted });
   } catch (error) {
     console.error('Error fetching applications:', error);
     res.status(500).json({ message: 'Error fetching applications', error: error.message });
+  }
+});
+
+// Get all contact messages for admin
+router.get('/contact-messages', authenticateAdmin, async (req, res) => {
+  try {
+    const ContactMessage = require('../models/ContactMessage');
+    const messages = await ContactMessage.find().sort({ createdAt: -1 });
+    res.json(messages);
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to fetch contact messages.' });
+  }
+});
+
+// Delete a contact message by ID
+router.delete('/contact-messages/:id', authenticateAdmin, async (req, res) => {
+  try {
+    const ContactMessage = require('../models/ContactMessage');
+    const result = await ContactMessage.findByIdAndDelete(req.params.id);
+    if (!result) {
+      return res.status(404).json({ message: 'Message not found' });
+    }
+    res.json({ message: 'Message deleted successfully' });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to delete message.' });
   }
 });
 

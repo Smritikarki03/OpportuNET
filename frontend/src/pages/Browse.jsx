@@ -14,6 +14,7 @@ const BrowseJobs = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [auth] = useAuth();
+  const [savedJobs, setSavedJobs] = useState([]);
 
   const locationOptions = [
     "All Locations",
@@ -63,6 +64,20 @@ const BrowseJobs = () => {
     };
 
     fetchJobs();
+
+    // Fetch saved jobs for jobseeker
+    const fetchSavedJobs = async () => {
+      if (auth?.user?.role !== 'jobseeker' || !auth?.token) return;
+      try {
+        const response = await axios.get('http://localhost:5000/api/auth/saved-jobs', {
+          headers: { Authorization: `Bearer ${auth.token}` }
+        });
+        setSavedJobs(response.data.savedJobs || []);
+      } catch (error) {
+        setSavedJobs([]);
+      }
+    };
+    fetchSavedJobs();
   }, [auth]);
 
   const handleSaveForLater = async (jobId) => {
@@ -73,7 +88,7 @@ const BrowseJobs = () => {
       }
 
       await axios.post(
-        'http://localhost:5000/api/saved-jobs',
+        'http://localhost:5000/api/auth/saved-jobs',
         { jobId },
         { headers: { Authorization: `Bearer ${auth.token}` } }
       );
@@ -84,12 +99,16 @@ const BrowseJobs = () => {
     }
   };
 
+  // Helper to check if job is already saved
+  const isJobSaved = (jobId) => savedJobs.some(job => job._id === jobId);
+
   const filteredJobs = jobs.filter((job) => {
     // Convert salary to a number for comparison
     const salaryValue = parseInt(job.salary, 10);
     const salaryFilterValue = salaryRange === "all" ? 0 : parseInt(salaryRange.replace("Rs.", "").replace(",", ""), 10);
 
     return (
+      job.status === "Active" && // Only show active jobs
       (job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         job.company.toLowerCase().includes(searchTerm.toLowerCase())) &&
       (jobType === "all" || job.jobType === jobType) &&
@@ -205,8 +224,11 @@ const BrowseJobs = () => {
                       </Link>
                       <button
                         onClick={() => handleSaveForLater(job._id)}
-                        className="w-1/2 bg-teal-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-300">
-                        Save for Later
+                        className="w-1/2 bg-teal-800 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition duration-300"
+                        style={{ display: auth?.user?.role === 'employer' ? 'none' : undefined }}
+                        disabled={isJobSaved(job._id)}
+                      >
+                        {isJobSaved(job._id) ? 'Already Saved for Later' : 'Save for Later'}
                       </button>
                     </div>
                   </div>

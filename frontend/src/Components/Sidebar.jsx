@@ -73,7 +73,7 @@ const Sidebar = ({ children }) => {
               </li>
               <li>
                 <NavLink
-                  to="/Reviews"
+                  to="/admin/contact-messages"
                   className={({ isActive }) =>
                     `flex items-center px-8 py-4 rounded-lg transition-colors font-medium text-lg gap-4 ${
                       isActive ? "bg-white text-teal-800 shadow-md" : "hover:bg-teal-700 hover:text-white"
@@ -81,7 +81,7 @@ const Sidebar = ({ children }) => {
                   }
                 >
                   <FaFileAlt className="h-6 w-6" />
-                  Reviews
+                  Contact Messages
                 </NavLink>
               </li>
             </>

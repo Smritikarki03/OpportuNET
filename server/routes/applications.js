@@ -159,10 +159,12 @@ router.post('/', authenticate, handleMulterUpload, async (req, res) => {
 
     // Update user's appliedJobs array
     const appliedJobUpdate = {
+      jobId,
       date: new Date().toISOString().split('T')[0],
       role: job.title,
       company: job.company,
-      status: 'APPLIED'
+      status: 'APPLIED',
+      applicationId: savedApplication._id
     };
 
     await User.findByIdAndUpdate(userId, {
@@ -201,15 +203,28 @@ router.post('/', authenticate, handleMulterUpload, async (req, res) => {
   }
 });
 
-// DELETE /api/applications/:applicationId - Delete an application
+// DELETE /api/applications/:applicationId - Delete an application and clean up references
 router.delete('/:applicationId', authenticate, async (req, res) => {
   try {
     const { applicationId } = req.params;
-    const deleted = await Application.findByIdAndDelete(applicationId);
-    if (!deleted) {
+    const application = await Application.findByIdAndDelete(applicationId);
+    if (!application) {
       return res.status(404).json({ message: 'Application not found' });
     }
-    res.json({ message: 'Application deleted successfully' });
+
+    // Remove from user's appliedJobs
+    await User.findByIdAndUpdate(
+      application.userId,
+      { $pull: { appliedJobs: { applicationId: application._id } } }
+    );
+
+    // Remove from job's applications array
+    await Job.findByIdAndUpdate(
+      application.jobId,
+      { $pull: { applications: { applicantId: application.userId } } }
+    );
+
+    res.json({ message: 'Application and references deleted successfully' });
   } catch (error) {
     console.error('Error deleting application:', error);
     res.status(500).json({ message: 'Error deleting application', error: error.message });
@@ -233,6 +248,35 @@ router.put('/:applicationId/archive', authenticate, async (req, res) => {
   } catch (error) {
     console.error('Error archiving application:', error);
     res.status(500).json({ message: 'Error archiving application', error: error.message });
+  }
+});
+
+// Get a single application by jobId and userId
+router.get('/single', authenticate, async (req, res) => {
+  try {
+    const { jobId, userId } = req.query;
+    if (!jobId || !userId) {
+      return res.status(400).json({ message: 'jobId and userId are required' });
+    }
+    const application = await Application.findOne({ jobId, userId });
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found' });
+    }
+    res.json(application);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching application', error: error.message });
+  }
+});
+
+// Get all applications for a user
+router.get('/user/:userId', authenticate, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Populate jobId to get job details
+    const applications = await Application.find({ userId }).populate('jobId');
+    res.json(applications);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching user applications', error: error.message });
   }
 });
 

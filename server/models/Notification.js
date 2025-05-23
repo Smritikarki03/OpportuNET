@@ -14,13 +14,21 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  adminId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  employerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  },
   companyId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Company'
   },
   type: {
     type: String,
-    enum: ['review', 'application', 'message'],
+    enum: ['review', 'application', 'message', 'contact', 'employer_approval'],
     default: 'message'
   },
   createdAt: {

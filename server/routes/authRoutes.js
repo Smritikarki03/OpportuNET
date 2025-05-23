@@ -6,8 +6,10 @@ const multer = require('multer');
 const userModel = require('../models/User'); // Adjust the path to your User model
 const path = require('path');
 const Job = require('../models/Job'); // Make sure to import the Job model
-
-
+const nodemailer = require('nodemailer');
+const User = require('../models/User');
+const OTP = require('../models/OTP');
+const authController = require("../controllers/authController");
 
 const router = express.Router();
 
@@ -136,31 +138,139 @@ router.put("/editProfile", authenticate, upload.fields([
   }
 });
 
-
-// In your userInfo route handler
-router.get('/userInfo', authenticate, async (req, res) => {
+// Send OTP for jobseeker signup/login
+router.post('/send-otp', async (req, res) => {
+  const { email, role } = req.body;
   try {
-    const user = await User.findById(req.user.id);
-    
+    // For new job seekers during signup, we don't need to check if user exists
+    if (role === 'jobseeker') {
+      // Generate 6-digit OTP
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+
+      // Save OTP to database
+      const newOtp = new OTP({
+        email: email.toLowerCase(),
+        otp,
+        role,
+        createdAt: new Date()
+      });
+      await newOtp.save();
+
+      // Send OTP email
+      const transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+          user: process.env.USER_EMAIL,
+          pass: process.env.USER_PASSWORD,
+        },
+      });
+      await transporter.sendMail({
+        from: process.env.USER_EMAIL,
+        to: email,
+        subject: 'Your OpportuNET Verification Code',
+        text: `Your verification code is: ${otp}. It is valid for 5 minutes.`,
+        html: `<div style="font-family: Arial, sans-serif; font-size: 16px; color: #222;">
+          <p>Your verification code is:</p>
+          <h2 style="letter-spacing: 4px;">${otp}</h2>
+          <p>This code is valid for 5 minutes.</p>
+        </div>`
+      });
+      res.json({ success: true, message: 'OTP sent to your email.' });
+    } else {
+      res.status(400).json({ message: 'Invalid role specified' });
+    }
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({ message: 'Error sending OTP' });
+  }
+});
+
+// Verify OTP for jobseeker signup/login
+router.post('/verify-otp', async (req, res) => {
+  const { email, otp, role } = req.body;
+  try {
+    if (role !== 'jobseeker') {
+      return res.status(400).json({ message: 'Invalid role specified' });
+    }
+
+    // Find the OTP in the database
+    const otpRecord = await OTP.findOne({
+      email: email.toLowerCase(),
+      otp,
+      role,
+      createdAt: { $gt: new Date(Date.now() - 5 * 60 * 1000) } // Check if OTP is not expired
+    });
+
+    if (!otpRecord) {
+      return res.status(400).json({ message: 'Invalid or expired OTP' });
+    }
+
+    // Delete the used OTP
+    await OTP.deleteOne({ _id: otpRecord._id });
+
+    res.json({ success: true, message: 'OTP verified successfully' });
+  } catch (error) {
+    console.error('Error verifying OTP:', error);
+    res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
+
+// Add these new routes
+router.post("/send-otp", authController.sendOTP);
+router.post("/verify-otp", authController.verifyOTP);
+router.post("/check-new-jobseeker", authController.checkNewJobseeker);
+router.post("/login-verify-otp", authController.verifyLoginOTP);
+
+// Save a job for later
+router.post('/saved-jobs', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.body;
+    if (!jobId) return res.status(400).json({ message: 'Job ID is required' });
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (user.savedJobs.includes(jobId)) {
+      return res.status(400).json({ message: 'Job already saved' });
+    }
+    user.savedJobs.push(jobId);
+    await user.save();
+    res.json({ message: 'Job saved for later' });
+  } catch (error) {
+    console.error('Error saving job:', error);
+    res.status(500).json({ message: 'Error saving job' });
+  }
+});
+
+// Get all saved jobs for the logged-in user
+router.get('/saved-jobs', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const user = await User.findById(userId).populate('savedJobs');
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ savedJobs: user.savedJobs });
+  } catch (error) {
+    console.error('Error fetching saved jobs:', error);
+    res.status(500).json({ message: 'Error fetching saved jobs' });
+  }
+});
+
+// Remove a saved job for the logged-in user
+router.delete('/saved-jobs/:jobId', authenticate, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { jobId } = req.params;
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { $pull: { savedJobs: jobId } },
+      { new: true }
+    );
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
-    let userData = user.toObject();
-
-    // If the user is an employer, fetch their posted jobs
-    if (user.role === 'employer') {
-      const postedJobs = await Job.find({ userId: user._id })
-        .select('title location salary status _id')
-        .sort({ createdAt: -1 });
-      
-      userData.postedJobs = postedJobs;
-    }
-
-    res.json(userData);
+    res.json({ message: 'Job removed from saved jobs.' });
   } catch (error) {
-    console.error('Error fetching user info:', error);
-    res.status(500).json({ message: 'Error fetching user information' });
+    res.status(500).json({ message: 'Error removing saved job', error: error.message });
   }
 });
 

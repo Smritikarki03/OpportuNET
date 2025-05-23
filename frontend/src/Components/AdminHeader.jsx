@@ -1,7 +1,12 @@
 import React from "react";
 import { Link } from "react-router-dom";
+import NotificationBell from "./Components/NotificationBell";
+import AdminNotifications from "./AdminNotifications";
+import { useState } from "react";
 
 const AdminHeader = () => {
+  const [showNotifications, setShowNotifications] = useState(false);
+  const handleNotificationClick = () => setShowNotifications((prev) => !prev);
   return (
     <header className="bg-blue-900 text-white p-4">
       <div className="container mx-auto flex items-center justify-between">
@@ -28,6 +33,16 @@ const AdminHeader = () => {
               Settings
             </Link>
           </nav>
+
+          {/* Notification Bell */}
+          <div className="relative">
+            <NotificationBell onNotificationClick={handleNotificationClick} />
+            {showNotifications && (
+              <div className="absolute right-0 mt-2 w-96 bg-white text-black shadow-lg rounded-lg z-50">
+                <AdminNotifications />
+              </div>
+            )}
+          </div>
 
           {/* Logout Button */}
           <button className="bg-red-500 hover:bg-red-700 text-white py-2 px-4 rounded-md">

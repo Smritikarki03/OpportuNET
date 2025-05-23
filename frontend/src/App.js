@@ -33,6 +33,7 @@ import EditCompanyProfile from './Components/EditCompanyProfile'; // Add this
 import EditJob from './pages/Employer/EditJob';
 import Reviews from './pages/Admin/Reviews';
 import Applications from './pages/Admin/Applications';
+import ContactMessages from './pages/Admin/ContactMessages';
 
 const App = () => {
   return (
@@ -71,6 +72,7 @@ const App = () => {
           <Route path="/jobs/edit/:id" element={<EditJob />} />
           <Route path="/reviews" element={<Reviews />} />
           <Route path="/admin/applications" element={<Applications />} />
+          <Route path="/admin/contact-messages" element={<ContactMessages />} />
         </Routes>
       </div>
   );

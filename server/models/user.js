@@ -17,6 +17,10 @@ const userSchema = new mongoose.Schema({
   resetPasswordToken: String,
   resetPasswordExpires: Date,
   isProfileViewed: { type: Boolean, default: false },
+  firstLogin: {
+    type: Boolean,
+    default: true,
+  },
   isCompanySetup: { type: Boolean, default: false }, // Optional: Keep to track company setup
   skills: [{ type: String }], // Array of skills (for both job seekers and employers)
   image: { type: String }, // Path to profile image
@@ -27,6 +31,7 @@ const userSchema = new mongoose.Schema({
       role: String,
       company: String,
       status: String,
+      applicationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Application' }
     },
   ], // For job seekers
   // Fields for employers (as per the screenshot)
@@ -49,6 +54,10 @@ const userSchema = new mongoose.Schema({
       },
     },
   ], // For employers
+  // OTP fields for jobseeker login
+  otp: { type: String },
+  otpExpiry: { type: Date },
+  savedJobs: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Job' }],
 }, { timestamps: true });
 
 userSchema.methods.generateAuthToken = function () {

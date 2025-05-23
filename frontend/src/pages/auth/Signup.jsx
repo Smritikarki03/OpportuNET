@@ -1,60 +1,61 @@
 import React, { useState } from "react";
+import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Signup = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
     email: "",
-    phoneNumber: "", // Optional, kept for potential future use
+    phoneNumber: "",
     password: "",
-    confirmPassword: "", // Added to match backend requirement
+    confirmPassword: "",
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(""); // State for error display
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    setError(""); // Clear error when user types
-    console.log("Signup: Input changed", { name, value, formData: { ...formData, [name]: value } });
+    setError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(""); // Clear previous error
+    setError("");
 
-    // Combine firstName and lastName into name
-    const name = `${formData.firstName} ${formData.lastName}`.trim();
-    console.log("Signup: Submitting form data", { name, email: formData.email, password: formData.password, confirmPassword: formData.confirmPassword });
+    // Validate passwords match
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name, // Combined name
-          email: formData.email,
-          password: formData.password,
-          confirmPassword: formData.confirmPassword,
-          // Removed phoneNumber and role as they are not expected by the backend for jobseeker
-        }),
+      const name = `${formData.firstName} ${formData.lastName}`.trim();
+      const response = await axios.post("http://localhost:5000/api/auth/register", {
+        name,
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        phone: formData.phoneNumber,
+        role: "jobseeker"
       });
-
-      const result = await response.json();
-      console.log("Signup: Server response", { status: response.status, result });
-
-      if (response.ok) {
+      if (response.data) {
         alert("Signup successful! Please login.");
-        window.location.href = "/login";
-      } else {
-        setError(result.message || "An error occurred during signup.");
+        navigate("/login");
       }
     } catch (error) {
-      console.error("Signup: Network error", error);
-      setError("Network error. Please try again later.");
+      setError(error.response?.data?.message || "Signup failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +74,7 @@ const Signup = () => {
       {/* Right Section */}
       <div className="w-1/2 bg-white flex items-center justify-center">
         <div className="w-full max-w-sm bg-teal-50 p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-bold text-center text-teal-800">Signup</h2>
+          <h2 className="text-2xl font-bold text-center text-teal-800">Job Seeker Signup</h2>
           {error && <p className="text-red-600 text-center mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className="mt-4 space-y-4">
             <div>
@@ -128,7 +129,6 @@ const Signup = () => {
                 name="phoneNumber"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                // Not required since backend doesn't use it for jobseeker
                 className="w-full px-4 py-2 mt-1 border rounded-lg shadow-sm focus:outline-none focus:ring-teal-500 focus:border-teal-500 sm:text-sm"
               />
             </div>
@@ -167,7 +167,7 @@ const Signup = () => {
               }`}
               disabled={isLoading}
             >
-              {isLoading ? "Signing up..." : "Signup"}
+              {isLoading ? "Signing up..." : "Sign Up"}
             </button>
           </form>
           <p className="mt-4 text-sm text-teal-600 text-center">

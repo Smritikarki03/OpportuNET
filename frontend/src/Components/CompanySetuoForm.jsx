@@ -107,115 +107,117 @@ const CompanySetupForm = () => {
   return (
     <>
       <Header />
-      <br/>
-      <br/>
-      <br/>
-      <br/>
-      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 p-6">
-        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-xl p-8">
-          <h1 className="text-2xl font-bold text-teal-800 mb-6">Create Company Profile</h1>
-          
+      <div className="min-h-screen bg-gradient-to-br from-teal-50 to-gray-100 p-6 flex items-center justify-center">
+        <div className="max-w-3xl w-full mx-auto bg-white rounded-3xl shadow-2xl p-10">
+          <h1 className="text-3xl font-bold text-teal-800 mb-2 text-center">Create Company Profile</h1>
+          <div className="h-1 w-16 bg-teal-200 rounded mx-auto mb-8"></div>
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-center">
               <p className="text-red-600">{error}</p>
             </div>
           )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-7">
             <div>
-              <label className="block text-sm font-medium text-gray-700">Company Name *</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Company Name *</label>
               <input
                 type="text"
                 name="name"
                 value={formData.name}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Logo</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Logo</label>
               <input
                 type="file"
                 accept="image/*"
                 onChange={handleFileChange}
-                className="mt-1 block w-full border-gray-300 rounded-md"
+                className="mt-1 block w-full border-gray-300 rounded-xl px-4 py-2"
               />
               {formData.logo && (
-                <img src={formData.logo} alt="Logo Preview" className="mt-2 h-20 rounded-full" />
+                <div className="flex justify-center mt-4">
+                  <img src={formData.logo} alt="Logo Preview" className="h-28 w-28 rounded-full object-cover border-4 border-teal-200 shadow" />
+                </div>
               )}
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Industry *</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Industry *</label>
               <input
                 type="text"
                 name="industry"
                 value={formData.industry}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Location *</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Location *</label>
               <input
                 type="text"
                 name="location"
                 value={formData.location}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Established Date *</label>
-              <input
-                type="date"
-                name="establishedDate"
-                value={formData.establishedDate}
-                onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Employee Count</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Established Year *</label>
               <input
                 type="number"
+                name="establishedDate"
+                min="1900"
+                max={new Date().getFullYear()}
+                value={formData.establishedDate}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
+                required
+                placeholder="e.g. 2015"
+              />
+            </div>
+            <div>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Employee Count</label>
+              <input
+                type="number"
+                inputMode="numeric"
                 name="employeeCount"
                 value={formData.employeeCount}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg appearance-none"
+                style={{ MozAppearance: 'textfield' }}
+                min="0"
+                placeholder="e.g. 50"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Website</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Website</label>
               <input
                 type="url"
                 name="website"
                 value={formData.website}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700">Description *</label>
+              <label className="block text-base font-semibold text-gray-700 mb-1">Description *</label>
               <textarea
                 name="description"
                 value={formData.description}
                 onChange={handleInputChange}
-                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-teal-500 focus:border-teal-500"
+                className="mt-1 block w-full border-gray-300 rounded-xl shadow focus:ring-teal-500 focus:border-teal-500 px-4 py-3 text-lg"
                 rows="4"
                 required
               />
             </div>
-            <div className="flex justify-end">
+            <div>
               <button
                 type="submit"
                 disabled={loading}
-                className={`bg-teal-600 text-white py-2 px-6 rounded-lg hover:bg-teal-700 transition duration-300 ${
-                  loading ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className={`w-full bg-teal-600 text-white py-3 px-6 rounded-xl text-lg font-semibold shadow hover:bg-teal-700 transition duration-300 ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 {loading ? 'Creating Profile...' : 'Create Profile'}
               </button>

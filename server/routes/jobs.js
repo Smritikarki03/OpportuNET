@@ -10,23 +10,22 @@ const Notification = require('../models/Notification');
 
 // Middleware to check and update job status based on deadline
 const checkJobStatus = async (req, res, next) => {
+  console.log('checkJobStatus middleware running'); // DEBUG LOG
   try {
-    const jobs = await Job.find({ status: 'Active' });
-    for (const job of jobs) {
-      if (job.deadline < new Date()) {
-        job.status = 'Inactive';
-        await job.save();
-      }
-    }
+    console.log('\n=== Checking Job Status ===');
+    const now = new Date();
+    const result = await Job.updateMany(
+      { status: 'Active', deadline: { $lt: now } },
+      { $set: { status: 'Inactive' } }
+    );
+    console.log(`Updated ${result.modifiedCount} jobs to Inactive`);
+    console.log('==============================\n');
     next();
   } catch (error) {
-    console.error('Error checking job status:', error);
+    console.error('Error in checkJobStatus middleware:', error);
     next();
   }
 };
-
-// Apply the middleware to all routes
-router.use(checkJobStatus);
 
 router.post('/', authenticate, async (req, res) => {
   try {
@@ -109,7 +108,7 @@ router.get('/', authenticate, async (req, res) => {
       console.log('Admin user - showing all jobs');
       query = {};
     }
-    // If user is employer, only show their jobs
+    // If user is employer, only show their jobs (active and inactive)
     else if (req.user?.role?.toLowerCase() === 'employer') {
       console.log('Employer user - showing their jobs');
       console.log('Employer ID:', req.user.id);
@@ -319,36 +318,22 @@ router.put('/:id', authenticate, async (req, res) => {
     }
     console.log('Existing job found:', job);
 
-    // Validate required fields
-    const requiredFields = ['title', 'description', 'requirements', 'salary', 'location', 'jobType', 'experienceLevel', 'noOfPositions', 'company', 'deadline'];
-    const missingFields = requiredFields.filter(field => !updates[field]);
-    if (missingFields.length > 0) {
-      console.log('Missing required fields:', missingFields);
-      return res.status(400).json({ message: `Missing required fields: ${missingFields.join(', ')}` });
+    // If deadline is being updated, validate it and set status to Active
+    if (updates.deadline) {
+      const deadlineDate = new Date(updates.deadline);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (deadlineDate < today) {
+        console.log('Invalid deadline - date is in the past:', updates.deadline);
+        return res.status(400).json({ message: 'Deadline cannot be in the past' });
+      }
+      updates.status = 'Active';
+      updates.isActive = true;
     }
 
-    // Validate deadline is not in the past
-    const deadlineDate = new Date(updates.deadline);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    
-    if (deadlineDate < today) {
-      console.log('Invalid deadline - date is in the past:', updates.deadline);
-      return res.status(400).json({ message: 'Deadline cannot be in the past' });
-    }
+    updates.updatedAt = new Date();
 
-    // Always set status to Active if deadline is in the future
-    const updatedJob = await Job.findByIdAndUpdate(
-      jobId,
-      { 
-        ...updates,
-        status: 'Active', // Always set to Active when deadline is updated to future date
-        isActive: true,   // Also update isActive field
-        updatedAt: new Date()
-      },
-      { new: true }
-    );
-
+    const updatedJob = await Job.findByIdAndUpdate(jobId, updates, { new: true });
     if (!updatedJob) {
       console.log('Failed to update job:', jobId);
       return res.status(500).json({ message: 'Failed to update job' });
@@ -356,7 +341,7 @@ router.put('/:id', authenticate, async (req, res) => {
 
     console.log('Job updated successfully:', updatedJob);
     res.json({ 
-      message: 'Job updated and activated successfully',
+      message: 'Job updated successfully',
       job: updatedJob 
     });
   } catch (err) {
@@ -435,6 +420,12 @@ router.put('/:jobId/applications/:applicantId/status', authenticate, async (req,
       return res.status(404).json({ message: 'Applicant not found' });
     }
 
+    // Fetch employer info before email logic
+    let employer = undefined;
+    if (job && job.userId) {
+      employer = await User.findById(job.userId);
+    }
+
     // Send email to applicant for certain statuses
     const nodemailer = require('nodemailer');
     const transporter = nodemailer.createTransport({
@@ -453,30 +444,52 @@ router.put('/:jobId/applications/:applicantId/status', authenticate, async (req,
       const dateStr = interviewDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
       const timeStr = interviewDate.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
       // Fetch employer info
-      const employer = await User.findById(job.userId);
       const employerEmail = employer?.email || '[recruiter email]';
       const employerPhone = employer?.phone || '[contact number]';
-      const locationStr = job.location || '[location]';
+      // Use employer's signup location for interview location
+      const locationStr = employer?.location || job.location || '[location]';
       text = `Dear ${applicant.name},\n\nWe are pleased to inform you that your application for the ${job.title} position at ${job.company} has progressed to the next stage.\n\nYour interview has been scheduled for:\n\nDate: ${dateStr}\nTime: ${timeStr}\nLocation: ${locationStr}\n\nPlease confirm your availability by replying to this email. If you have any questions or need to reschedule, feel free to contact us at ${employerEmail} or ${employerPhone}.\n\nWe look forward to speaking with you!\n\nBest regards,\nThe ${job.company} Recruitment Team`;
       html = `<div style="font-family: Arial, sans-serif; font-size: 16px; color: #222;">
         <p>Dear ${applicant.name},</p>
         <p>We are pleased to inform you that your application for the <b>${job.title}</b> position at <b>${job.company}</b> has progressed to the next stage.</p>
         <p>Your interview has been scheduled for:</p>
         <ul style="list-style: none; padding-left: 0;">
-          <li><b>📅 Date:</b> ${dateStr}</li>
-          <li><b>🕚 Time:</b> ${timeStr}</li>
-          <li><b>📍 Location:</b> ${locationStr}</li>
+          <li><span style='font-size:18px;'>📅</span> <b>Date:</b> ${dateStr}</li>
+          <li><span style='font-size:18px;'>🕚</span> <b>Time:</b> ${timeStr}</li>
+          <li><span style='font-size:18px;'>📍</span> <b>Location:</b> ${locationStr}</li>
         </ul>
-        <p>Please confirm your availability by replying to this email. If you have any questions or need to reschedule, feel free to contact us at <b>${employerEmail}${employerPhone ? ' or ' + employerPhone : ''}</b>.</p>
+        <p>Please confirm your availability by replying to this email. If you have any questions or need to reschedule, feel free to contact us at 
+          <a href="mailto:${employerEmail}" style="color: #222; text-decoration: underline;">${employerEmail}</a>
+          ${employerPhone ? ' or <span style="font-weight: bold; color: #222;">' + employerPhone + '</span>' : ''}.
+        </p>
         <p>We look forward to speaking with you!</p>
         <p style="margin-top: 32px;">Best regards,<br/>The ${job.company} Recruitment Team</p>
       </div>`;
     }
     if (status === 'ACCEPTED') {
-      text += `\n\nCongratulations! You have been offered the job.`;
+      text = `Dear ${applicant.name},\n\nCongratulations! We are thrilled to inform you that you have been selected for the ${job.title} position at ${job.company}!\n\nWe were truly impressed by your skills and experience, and we are excited to welcome you to our team.\n\nOur HR team will reach out to you soon with further details about your offer, onboarding process, and next steps.\n\nIf you have any questions, feel free to reply to this email.\n\nOnce again, congratulations and welcome aboard!\n\nBest regards,\n${employer?.name || 'Recruitment Team'}\n${employer?.title || ''}\n${job.company}`;
+      html = `<div style="font-family: Arial, sans-serif; font-size: 16px; color: #222;">
+        <p>Dear ${applicant.name},</p>
+        <p style="font-size: 18px; color: #1a7f37; font-weight: bold;">🎉 Congratulations! 🎉</p>
+        <p>We are <b>thrilled</b> to inform you that you have been selected for the <b>${job.title}</b> position at <b>${job.company}</b>!</p>
+        <p>We were truly impressed by your skills and experience, and we are excited to welcome you to our team.</p>
+        <p>We will reach out to you soon with further details about your offer, onboarding process, and next steps.</p>
+        <p>If you have any questions, feel free to reply to this email.</p>
+        <p style="font-size: 17px; color: #1a7f37; font-weight: bold;">Once again, congratulations and welcome aboard!</p>
+        <p style="margin-top: 32px;">Best regards,<br/>${employer?.name || 'Recruitment Team'}<br/>${employer?.title || ''}<br/>${job.company}</p>
+      </div>`;
     }
     if (status === 'REJECTED') {
-      text += `\n\nThank you for your interest. Unfortunately, you were not selected.`;
+      text = `Dear ${applicant.name},\n\nThank you for taking the time to apply for the ${job.title} position at ${job.company}. We appreciate your interest in the role and the effort you put into your application.\n\nAfter careful consideration, we regret to inform you that you were not selected for the position.\n\nThis decision was not easy due to the high quality of candidates. We encourage you to apply for future openings that match your skills and experience.\n\nWe wish you all the best in your job search and future endeavors.\n\nSincerely,\n\n${employer?.name || 'Recruitment Team'}\n${employer?.title || ''}\n${job.company}`;
+      html = `<div style="font-family: Arial, sans-serif; font-size: 16px; color: #222;">
+        <p>Dear ${applicant.name},</p>
+        <p>Thank you for taking the time to apply for the <b>${job.title}</b> position at <b>${job.company}</b>. We appreciate your interest in the role and the effort you put into your application.</p>
+        <p>After careful consideration, we regret to inform you that you were not selected for the position.</p>
+        <p>This decision was not easy due to the high quality of candidates. We encourage you to apply for future openings that match your skills and experience.</p>
+        <p>We wish you all the best in your job search and future endeavors.</p>
+        <p style="color: #222;">Sincerely,</p>
+        <p style="color: #222;">${employer?.name || 'Recruitment Team'}<br/>${employer?.title || ''}<br/>${job.company}</p>
+      </div>`;
     }
     if (['INTERVIEW_SCHEDULED', 'ACCEPTED', 'REJECTED'].includes(status)) {
       try {
@@ -499,7 +512,8 @@ router.put('/:jobId/applications/:applicantId/status', authenticate, async (req,
     }
     const notification = new Notification({
       recipient: applicantId,
-      message: notificationMessage
+      message: notificationMessage,
+      type: 'application'
     });
     await notification.save();
 
@@ -510,4 +524,27 @@ router.put('/:jobId/applications/:applicantId/status', authenticate, async (req,
   }
 });
 
+// Admin-only endpoint to manually update expired jobs
+router.post('/update-expired', authenticate, async (req, res) => {
+  if (req.user.role.toLowerCase() !== 'admin') {
+    return res.status(403).json({ message: 'Unauthorized' });
+  }
+  try {
+    const jobs = await Job.find({ status: 'Active' });
+    let updatedCount = 0;
+    for (const job of jobs) {
+      if (job.deadline < new Date()) {
+        job.status = 'Inactive';
+        await job.save();
+        updatedCount++;
+      }
+    }
+    res.json({ message: `Updated ${updatedCount} expired jobs to Inactive.` });
+  } catch (error) {
+    console.error('Error updating expired jobs:', error);
+    res.status(500).json({ message: 'Error updating expired jobs', error: error.message });
+  }
+});
+
 module.exports = router;
+module.exports.checkJobStatus = checkJobStatus;

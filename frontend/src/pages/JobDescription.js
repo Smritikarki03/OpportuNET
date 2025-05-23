@@ -21,16 +21,31 @@ const JobDescription = () => {
         // Check if user has already applied
         const authData = localStorage.getItem("auth");
         if (authData) {
-          const { token } = JSON.parse(authData);
+          const { token, user } = JSON.parse(authData);
           const userResponse = await axios.get("http://localhost:5000/api/auth/userinfo", {
             headers: { Authorization: `Bearer ${token}` }
           });
           
           if (userResponse.data.appliedJobs) {
-            const appliedJob = userResponse.data.appliedJobs.find(
-              job => job.role === response.data.title && 
-                     job.company === response.data.company
-            );
+            // Debug logging
+            console.log('Job being viewed:', response.data);
+            console.log('User appliedJobs:', userResponse.data.appliedJobs);
+            const appliedJob = userResponse.data.appliedJobs.find(job => {
+              // Handle jobId as string or object
+              if (job.jobId) {
+                if (typeof job.jobId === 'string' && (job.jobId === response.data._id || job.jobId === response.data.id)) {
+                  return true;
+                }
+                if (typeof job.jobId === 'object' && job.jobId !== null && (job.jobId._id === response.data._id || job.jobId === response.data._id)) {
+                  return true;
+                }
+              }
+              // Fallback: match by title and company (case-insensitive, trimmed)
+              return (
+                job.role?.trim().toLowerCase() === response.data.title?.trim().toLowerCase() &&
+                job.company?.trim().toLowerCase() === response.data.company?.trim().toLowerCase()
+              );
+            });
             
             if (appliedJob) {
               setHasApplied(true);
@@ -85,7 +100,6 @@ const JobDescription = () => {
       <br></br>
       <br></br>
       <br></br>
-      
       <div className="container mx-auto p-6">
         <div className="bg-white p-6 rounded-lg shadow-lg">
           <div className="flex justify-between items-center mb-6">
@@ -99,33 +113,61 @@ const JobDescription = () => {
             </div>
             <div className="flex flex-col items-end">
               {hasApplied && (
-                <span className={`font-semibold mb-2 ${
-                  applicationStatus === 'PENDING' ? 'text-yellow-600' :
-                  applicationStatus === 'ACCEPTED' ? 'text-green-600' :
-                  'text-red-600'
-                }`}>
-                  {applicationStatus === 'PENDING' ? '✓ Application Pending Review' :
-                   applicationStatus === 'ACCEPTED' ? '✓ Application Accepted' :
-                   '✗ Application Rejected'}
-                </span>
+                <>
+                  <span className={`font-semibold mb-2 ${
+                    applicationStatus === 'APPLIED' ? 'text-blue-600' :
+                    applicationStatus === 'REVIEWED' ? 'text-yellow-600' :
+                    applicationStatus === 'SHORTLISTED' ? 'text-purple-600' :
+                    applicationStatus === 'INTERVIEW_SCHEDULED' ? 'text-orange-600' :
+                    applicationStatus === 'INTERVIEWED' ? 'text-indigo-600' :
+                    applicationStatus === 'ACCEPTED' ? 'text-green-600' :
+                    applicationStatus === 'REJECTED' ? 'text-red-600' :
+                    'text-gray-600'
+                  }`}>
+                    {applicationStatus === 'APPLIED' ? '✓ Application Submitted' :
+                     applicationStatus === 'REVIEWED' ? '✓ Application Reviewed' :
+                     applicationStatus === 'SHORTLISTED' ? '✓ Application Shortlisted' :
+                     applicationStatus === 'INTERVIEW_SCHEDULED' ? '✓ Interview Scheduled' :
+                     applicationStatus === 'INTERVIEWED' ? '✓ Interviewed' :
+                     applicationStatus === 'ACCEPTED' ? '✓ Application Accepted' :
+                     applicationStatus === 'REJECTED' ? '✗ Application Rejected' :
+                     '✓ Application Status Unknown'}
+                  </span>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="text-teal-600 underline text-sm mb-2"
+                  >
+                    Refresh Status
+                  </button>
+                </>
               )}
-              <button
-                onClick={handleApply}
-                className={`px-6 py-2 rounded-lg transition ${
-                  hasApplied && applicationStatus !== 'REJECTED'
-                    ? "bg-gray-400 cursor-not-allowed"
-                    : "bg-teal-600 hover:bg-purple-700 text-white"
-                }`}
-                disabled={hasApplied && applicationStatus !== 'REJECTED'}
-              >
-                {hasApplied && applicationStatus === 'PENDING' ? "Application Pending" :
-                 hasApplied && applicationStatus === 'ACCEPTED' ? "Application Accepted" :
-                 hasApplied && applicationStatus === 'REJECTED' ? "Apply Again" :
-                 "Apply Now"}
-              </button>
+              {(!window.localStorage.getItem('auth') || (JSON.parse(window.localStorage.getItem('auth'))?.user?.role !== 'employer')) && (
+                <>
+                  <button
+                    onClick={handleApply}
+                    className={`px-6 py-2 rounded-lg transition mb-1 ${
+                      hasApplied && applicationStatus !== 'REJECTED'
+                        ? "bg-gray-400 cursor-not-allowed text-white"
+                        : "bg-teal-600 hover:bg-purple-700 text-white"
+                    }`}
+                    disabled={hasApplied && applicationStatus !== 'REJECTED'}
+                  >
+                    {hasApplied && applicationStatus === 'APPLIED' ? "Application Submitted" :
+                     hasApplied && applicationStatus === 'REVIEWED' ? "Application Reviewed" :
+                     hasApplied && applicationStatus === 'SHORTLISTED' ? "Application Shortlisted" :
+                     hasApplied && applicationStatus === 'INTERVIEW_SCHEDULED' ? "Interview Scheduled" :
+                     hasApplied && applicationStatus === 'INTERVIEWED' ? "Interviewed" :
+                     hasApplied && applicationStatus === 'ACCEPTED' ? "Application Accepted" :
+                     hasApplied && applicationStatus === 'REJECTED' ? "Apply Again" :
+                     "Apply Now"}
+                  </button>
+                  {hasApplied && applicationStatus !== 'REJECTED' && (
+                    <span className="text-sm text-gray-500 mt-1">You have already applied for this job.</span>
+                  )}
+                </>
+              )}
             </div>
           </div>
-
           <div className="border-t pt-4">
             <h2 className="text-xl font-semibold text-gray-800 mb-4">Job Description</h2>
             <div className="space-y-2 text-gray-700">

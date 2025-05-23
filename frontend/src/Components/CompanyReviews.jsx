@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FaStar } from 'react-icons/fa';
 import axios from 'axios';
 
-const CompanyReviews = ({ companyId }) => {
+const CompanyReviews = ({ companyId, readOnly = false, hideHeading = false }) => {
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -96,67 +96,68 @@ const CompanyReviews = ({ companyId }) => {
   return (
     <div className="space-y-6">
       {/* Review Form */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-xl font-semibold mb-4">
-          {userReview ? 'Edit Your Review' : 'Write a Review'}
-        </h3>
-        {error && <div className="text-red-500 mb-4">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex items-center space-x-2">
-            {[...Array(5)].map((_, index) => {
-              const ratingValue = index + 1;
-              return (
-                <label key={index}>
-                  <input
-                    type="radio"
-                    name="rating"
-                    value={ratingValue}
-                    onClick={() => setRating(ratingValue)}
-                    className="hidden"
-                  />
-                  <FaStar
-                    className="cursor-pointer"
-                    color={ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"}
-                    size={24}
-                    onMouseEnter={() => setHover(ratingValue)}
-                    onMouseLeave={() => setHover(0)}
-                  />
-                </label>
-              );
-            })}
-          </div>
-          <textarea
-            value={comment}
-            onChange={(e) => setComment(e.target.value)}
-            placeholder="Share your experience with this company..."
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            rows="4"
-          />
-          <div className="flex justify-end space-x-4">
-            {userReview && (
+      {!readOnly && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h3 className="text-xl font-semibold mb-4">
+            {userReview ? 'Edit Your Review' : 'Write a Review'}
+          </h3>
+          {error && <div className="text-red-500 mb-4">{error}</div>}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="flex items-center space-x-2">
+              {[...Array(5)].map((_, index) => {
+                const ratingValue = index + 1;
+                return (
+                  <label key={index}>
+                    <input
+                      type="radio"
+                      name="rating"
+                      value={ratingValue}
+                      onClick={() => setRating(ratingValue)}
+                      className="hidden"
+                    />
+                    <FaStar
+                      className="cursor-pointer"
+                      color={ratingValue <= (hover || rating) ? "#ffc107" : "#e4e5e9"}
+                      size={24}
+                      onMouseEnter={() => setHover(ratingValue)}
+                      onMouseLeave={() => setHover(0)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+            <textarea
+              value={comment}
+              onChange={(e) => setComment(e.target.value)}
+              placeholder="Share your experience with this company..."
+              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              rows="4"
+            />
+            <div className="flex justify-end space-x-4">
+              {userReview && (
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  className="px-4 py-2 text-red-600 hover:text-red-800"
+                >
+                  Delete Review
+                </button>
+              )}
               <button
-                type="button"
-                onClick={handleDelete}
-                className="px-4 py-2 text-red-600 hover:text-red-800"
+                type="submit"
+                className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
               >
-                Delete Review
+                {userReview ? 'Update Review' : 'Submit Review'}
               </button>
-            )}
-            <button
-              type="submit"
-              className="px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700"
-            >
-              {userReview ? 'Update Review' : 'Submit Review'}
-            </button>
-          </div>
-        </form>
-      </div>
-
+            </div>
+          </form>
+        </div>
+      )}
       {/* Reviews List */}
       <div className="space-y-4">
-        <h3 className="text-xl font-semibold">Reviews</h3>
+        {!hideHeading && <h3 className="text-xl font-semibold">Reviews</h3>}
         {reviews.length === 0 ? (
-          <p className="text-gray-500">No reviews yet. Be the first to review!</p>
+          <p className="text-gray-500">{readOnly ? 'No reviews yet for this company.' : 'No reviews yet. Be the first to review!'}</p>
         ) : (
           reviews.map((review) => (
             <div key={review._id} className="bg-white rounded-lg shadow p-4">

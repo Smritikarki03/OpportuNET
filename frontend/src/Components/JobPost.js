@@ -223,7 +223,7 @@ const JobPosting = () => {
                     onChange={handleChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="e.g. $50,000 - $70,000"
+                    placeholder="e.g. Rs.50,000 - Rs.70,000"
                   />
                 </div>
                 <div>
@@ -235,7 +235,7 @@ const JobPosting = () => {
                     onChange={handleChange}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-                    placeholder="e.g. New York, NY"
+                    placeholder="e.g. Kathmandu, Lalitpur"
                   />
                 </div>
               </div>
@@ -255,7 +255,7 @@ const JobPosting = () => {
                     <option value="Entry Level">Entry Level</option>
                     <option value="Mid Level">Mid Level</option>
                     <option value="Senior Level">Senior Level</option>
-                    <option value="Executive">Executive</option>
+                    {/* <option value="Executive">Executive</option> */}
                   </select>
                 </div>
                 <div>

@@ -13,6 +13,8 @@ const Applications = () => {
   const [statusFilter, setStatusFilter] = useState("");
   const [selectedApp, setSelectedApp] = useState(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [coverLetterText, setCoverLetterText] = useState('');
+  const [showCoverLetterModal, setShowCoverLetterModal] = useState(false);
 
   useEffect(() => {
     const fetchApplications = async () => {
@@ -104,8 +106,8 @@ const Applications = () => {
                   <tbody className="bg-white divide-y divide-gray-100">
                     {filteredApplications.map((application, idx) => (
                       <tr key={application._id} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{application.jobTitle}</td>
-                        <td className="px-6 py-4 whitespace-nowrap text-teal-700 font-semibold">{application.company}</td>
+                        <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-800">{application.jobTitle || ''}</td>
+                        <td className="px-6 py-4 whitespace-nowrap text-teal-700 font-semibold">{application.company || ''}</td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-base text-gray-900 font-semibold">{application.applicantName}</div>
                           <div className="text-sm text-gray-500">{application.applicantEmail}</div>
@@ -115,13 +117,32 @@ const Applications = () => {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex gap-2">
                             <button
-                              onClick={() => window.open(application.resumeUrl, '_blank')}
+                              onClick={() => {
+                                if (application.resumeUrl) {
+                                  const url = application.resumeUrl.startsWith('http')
+                                    ? application.resumeUrl
+                                    : `http://localhost:5000/${application.resumeUrl.replace(/^\\+|^\/+/,'')}`;
+                                  window.open(url, '_blank');
+                                }
+                              }}
                               className="px-3 py-1 rounded border border-blue-200 text-blue-700 font-medium hover:bg-blue-50 transition"
                             >
                               Resume
                             </button>
                             <button
-                              onClick={() => window.open(application.coverLetterUrl, '_blank')}
+                              onClick={() => {
+                                if (application.coverLetterUrl) {
+                                  const url = application.coverLetterUrl.startsWith('http')
+                                    ? application.coverLetterUrl
+                                    : `http://localhost:5000/${application.coverLetterUrl.replace(/^\\+|^\/+/,'')}`;
+                                  window.open(url, '_blank');
+                                } else if (application.coverLetter) {
+                                  setCoverLetterText(application.coverLetter);
+                                  setShowCoverLetterModal(true);
+                                } else {
+                                  toast.info('No cover letter provided.');
+                                }
+                              }}
                               className="px-3 py-1 rounded border border-indigo-200 text-indigo-700 font-medium hover:bg-indigo-50 transition"
                             >
                               Cover Letter
@@ -137,6 +158,24 @@ const Applications = () => {
           </div>
         </div>
       </main>
+      {showCoverLetterModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-semibold text-teal-700">Cover Letter</h3>
+              <button
+                onClick={() => setShowCoverLetterModal(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+            <div className="prose max-w-none whitespace-pre-wrap font-sans">
+              {coverLetterText}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

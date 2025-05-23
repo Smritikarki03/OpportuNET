@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 import Header from "../../Components/Header";
 import Footer from "../../Components/Footer";
@@ -20,8 +20,14 @@ const ProfilePage = () => {
   const [interviewTimeInput, setInterviewTimeInput] = useState("");
   const [statusChange, setStatusChange] = useState({});
   const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [selectedApplication, setSelectedApplication] = useState(null);
+  const [savedJobs, setSavedJobs] = useState([]);
+  const [renewJobId, setRenewJobId] = useState(null);
+  const [renewDate, setRenewDate] = useState("");
   const navigate = useNavigate();
   const location = useLocation();
+  const appliedJobsRef = useRef(null);
+  const jobApplicantsRef = useRef(null);
 
   // Add debug logging
   useEffect(() => {
@@ -89,7 +95,40 @@ const ProfilePage = () => {
             console.error("Error fetching employer jobs:", error);
           }
         }
-        
+        // If user is a jobseeker, fetch their applied jobs/applications
+        if (processedUser.role === "jobseeker") {
+          try {
+            const appsRes = await axios.get(
+              `http://localhost:5000/api/applications/user/${processedUser._id}`,
+              { headers: { Authorization: `Bearer ${auth.token}` } }
+            );
+            // Map applications to the format expected by the table
+            const appliedJobs = (appsRes.data || []).map(app => {
+              // Format date to only show date part
+              let formattedDate = "N/A";
+              if (app.appliedDate) {
+                formattedDate = new Date(app.appliedDate).toLocaleDateString();
+              } else if (app.createdAt) {
+                formattedDate = new Date(app.createdAt).toLocaleDateString();
+              }
+              // Use populated jobId for job title and company if available
+              let jobTitle = app.jobTitle || (app.jobId && app.jobId.title) || app.role || "N/A";
+              let companyName = app.company || (app.jobId && app.jobId.company) || "N/A";
+              return {
+                date: formattedDate,
+                role: jobTitle,
+                company: companyName,
+                status: app.status,
+                jobId: app.jobId?._id || app.jobId || (app.job && app.job._id),
+                applicationId: app._id,
+              };
+            });
+            processedUser.appliedJobs = appliedJobs;
+          } catch (err) {
+            console.error("Error fetching applied jobs:", err);
+            processedUser.appliedJobs = [];
+          }
+        }
         setUser(processedUser);
         localStorage.setItem("user", JSON.stringify(processedUser));
 
@@ -140,6 +179,15 @@ const ProfilePage = () => {
       fetchUserData();
     }
   }, [fetchUserData, location.state, navigate, location.pathname]);
+
+  useEffect(() => {
+    if (location.state?.scrollTo === 'appliedJobs' && appliedJobsRef.current) {
+      appliedJobsRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+    if (location.state?.scrollTo === 'jobApplicants' && jobApplicantsRef.current) {
+      jobApplicantsRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [location]);
 
   const closePopup = () => setShowPopup(false);
 
@@ -330,6 +378,70 @@ const ProfilePage = () => {
   const archivedApplications = postedJobs
     .flatMap(job => (job.applications || []).map(app => ({ ...app, jobTitle: job.title, jobId: job._id })))
     .filter(app => app.archived);
+
+  const handleViewApplication = async (job) => {
+    try {
+      let params = { userId: user._id };
+      if (job.jobId) {
+        params.jobId = job.jobId;
+      } else if (job.role && job.company) {
+        // Fallback: try to find the jobId by matching job title and company
+        // This requires a backend endpoint or logic to find the application by job title, company, and userId
+        // For now, try to fetch all applications for this user and find the matching one
+        const allAppsRes = await axios.get(`http://localhost:5000/api/applications/user/${user._id}`, {
+          headers: { Authorization: `Bearer ${auth.token}` },
+        });
+        const found = allAppsRes.data.find(app => app.applicantName === user.name && app.status === job.status && app.role === job.role && app.company === job.company);
+        if (found) {
+          setSelectedApplication(found);
+          return;
+        } else {
+          alert('Could not find application details.');
+          return;
+        }
+      }
+      // Normal fetch by jobId and userId
+      const response = await axios.get(
+        `http://localhost:5000/api/applications/single`,
+        {
+          params,
+          headers: { Authorization: `Bearer ${auth.token}` },
+        }
+      );
+      setSelectedApplication({ ...job, ...response.data });
+    } catch (error) {
+      alert('Could not fetch application details.');
+    }
+  };
+
+  // Fetch saved jobs for job seekers
+  const fetchSavedJobs = useCallback(async () => {
+    try {
+      if (auth.user?.role !== 'jobseeker') return;
+      const response = await axios.get('http://localhost:5000/api/auth/saved-jobs', {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      setSavedJobs(response.data.savedJobs || []);
+    } catch (error) {
+      console.error('Error fetching saved jobs:', error);
+    }
+  }, [auth]);
+
+  useEffect(() => {
+    fetchSavedJobs();
+  }, [fetchSavedJobs]);
+
+  const handleRemoveSavedJob = async (jobId) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/auth/saved-jobs/${jobId}`, {
+        headers: { Authorization: `Bearer ${auth.token}` }
+      });
+      setSavedJobs(prev => prev.filter(job => job._id !== jobId));
+      toast.success('Job removed from saved jobs.');
+    } catch (error) {
+      toast.error('Failed to remove job from saved jobs.');
+    }
+  };
 
   if (isLoading) return <div className="text-center text-gray-500">Loading...</div>;
   if (error) return <div className="text-center text-red-500">{error}</div>;
@@ -562,7 +674,55 @@ const ProfilePage = () => {
                                 >
                                   Delete
                                 </button>
+                                <button
+                                  onClick={() => {
+                                    setRenewJobId(job._id);
+                                    setRenewDate("");
+                                  }}
+                                  className="text-yellow-600 hover:text-yellow-900 font-medium text-sm"
+                                >
+                                  Renew
+                                </button>
                               </div>
+                              {renewJobId === job._id && (
+                                <div className="mt-2 flex items-center space-x-2">
+                                  <input
+                                    type="date"
+                                    value={renewDate}
+                                    min={new Date().toISOString().split('T')[0]}
+                                    onChange={e => setRenewDate(e.target.value)}
+                                    className="border rounded px-2 py-1 text-sm"
+                                  />
+                                  <button
+                                    className="bg-teal-600 text-white px-3 py-1 rounded hover:bg-teal-700 text-sm"
+                                    onClick={async () => {
+                                      if (!renewDate) {
+                                        alert("Please select a new deadline date.");
+                                        return;
+                                      }
+                                      try {
+                                        await axios.put(`http://localhost:5000/api/jobs/${job._id}`, { deadline: renewDate }, {
+                                          headers: { Authorization: `Bearer ${auth.token}` }
+                                        });
+                                        setRenewJobId(null);
+                                        setRenewDate("");
+                                        fetchUserData();
+                                        alert("Deadline updated successfully!");
+                                      } catch (err) {
+                                        alert("Failed to update deadline.");
+                                      }
+                                    }}
+                                  >
+                                    Save
+                                  </button>
+                                  <button
+                                    className="text-gray-500 hover:text-gray-700 text-sm"
+                                    onClick={() => setRenewJobId(null)}
+                                  >
+                                    Cancel
+                                  </button>
+                                </div>
+                              )}
                             </td>
                           </tr>
                         ))
@@ -600,9 +760,9 @@ const ProfilePage = () => {
         )}
 
         {user.role === "employer" && (
-          <div className="max-w-6xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
+        <div ref={jobApplicantsRef} className="max-w-6xl mx-auto mt-8 bg-white shadow-lg rounded-lg p-6">
             <h2 className="text-lg font-semibold text-teal-700 mb-4">Job Applicants</h2>
-            <div className="overflow-x-auto">
+          <div className="overflow-x-auto">
               <span
                 className="text-teal-600 hover:text-teal-800 underline cursor-pointer mb-4 inline-block"
                 onClick={() => setShowArchiveModal(true)}
@@ -727,16 +887,6 @@ const ProfilePage = () => {
                               >
                                 {application.archived ? 'Unarchive' : 'Archive'}
                               </button>
-                              <button
-                                className="text-red-600 hover:text-red-900 font-medium text-sm"
-                                onClick={async () => {
-                                  if (window.confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
-                                    await handleDeleteApplication(application._id);
-                                  }
-                                }}
-                              >
-                                Delete
-                              </button>
                             </div>
                           </td>
                         </tr>
@@ -756,8 +906,8 @@ const ProfilePage = () => {
         )}
 
         {user.role === "jobseeker" && (
-          <div className="max-w-6xl mx-auto mt-8 bg-white rounded-xl shadow-2xl p-8 border border-gray-200">
-            <h2 className="text-2xl font-bold text-teal-700 mb-4">Applied Jobs</h2>
+          <div ref={appliedJobsRef} className="max-w-6xl mx-auto mt-8 bg-white rounded-xl shadow-2xl py-6 px-8 border border-gray-200">
+            <h2 className="text-2xl font-bold text-teal-700 mb-2">Applied Jobs</h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
@@ -794,17 +944,37 @@ const ProfilePage = () => {
                             <div className="flex flex-row space-x-4 justify-center">
                               <button
                                 className="text-blue-600 hover:text-blue-900 font-medium text-sm"
-                                onClick={() => alert('Edit functionality coming soon!')}
+                                onClick={() => handleViewApplication(job)}
                               >
-                                Edit
+                                View
                               </button>
                               <button
                                 className="text-red-600 hover:text-red-900 font-medium text-sm"
-                                onClick={() => {
+                                onClick={async () => {
                                   if (window.confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
-                                    // Remove from UI (optional: call backend if needed)
-                                    // For now, just show alert
-                                    alert('Delete functionality coming soon!');
+                                    if (job.applicationId) {
+                                      handleDeleteApplication(job.applicationId);
+                                    } else if (job.jobId && user._id) {
+                                      // Fallback: fetch applicationId from backend
+                                      try {
+                                        const response = await axios.get(
+                                          `http://localhost:5000/api/applications/single`,
+                                          {
+                                            params: { jobId: job.jobId, userId: user._id },
+                                            headers: { Authorization: `Bearer ${auth.token}` },
+                                          }
+                                        );
+                                        if (response.data && response.data._id) {
+                                          handleDeleteApplication(response.data._id);
+                                        } else {
+                                          alert('Could not find application to delete.');
+                                        }
+                                      } catch (err) {
+                                        alert('Could not find application to delete.');
+                                      }
+                                    } else {
+                                      alert('Delete not available for this application.');
+                                    }
                                   }
                                 }}
                               >
@@ -821,6 +991,63 @@ const ProfilePage = () => {
                         No jobs applied yet.
                       </td>
                     </tr>
+                  )}
+                </tbody>
+              </table>
+          </div>
+        </div>
+        )}
+
+        {/* Saved Jobs Table */}
+        {user && user.role === 'jobseeker' && (
+          <div className="max-w-6xl mx-auto mt-8 bg-white rounded-xl shadow-2xl py-6 px-8 border border-gray-200">
+            <h2 className="text-2xl font-bold text-teal-700 mb-2">Saved Jobs</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Title</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Company</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Location</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Salary</th>
+                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-100">
+                  {savedJobs.length === 0 ? (
+                    <tr>
+                      <td colSpan="5" className="px-6 py-8 text-center text-gray-500">No saved jobs.</td>
+                    </tr>
+                  ) : (
+                    savedJobs.map((job) => {
+                      // Robust date parsing and debug logging
+                      console.log('Saved Job:', job.title, 'Deadline:', job.deadline, 'Parsed:', Date.parse(job.deadline), 'Now:', new Date());
+                      const isExpired = job.deadline && !isNaN(Date.parse(job.deadline)) && new Date(job.deadline) < new Date();
+                      const isInactive = job.status && job.status !== 'Active';
+                      return (
+                        <tr key={job._id} className={isExpired || isInactive ? 'bg-gray-100 text-gray-400' : ''}>
+                          <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{job.title}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">{job.company}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">{job.location}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700">{job.salary}</td>
+                          <td className="px-6 py-4 whitespace-nowrap flex gap-2 items-center">
+                            {isExpired ? (
+                              <span className="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs mr-7">Expired</span>
+                            ) : isInactive ? (
+                              <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs">Closed</span>
+                            ) : (
+                              <Link to={`/description/${job._id}`} className="text-teal-600 hover:underline">View Details</Link>
+                            )}
+                            <button
+                              onClick={() => handleRemoveSavedJob(job._id)}
+                              className="ml-2 px-2 py-1 bg-gray-200 text-gray-700 rounded hover:bg-red-200 hover:text-red-700 text-xs"
+                            >
+                              Remove
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -911,18 +1138,63 @@ const ProfilePage = () => {
                           >
                             Unarchive
                           </button>
-                          <button
-                            className="text-red-600 hover:text-red-900 font-medium text-sm ml-4"
-                            onClick={() => handleDeleteApplication(app._id)}
-                          >
-                            Delete
-                          </button>
                         </td>
                       </tr>
                     ))
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {selectedApplication && (
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full border border-gray-200 relative">
+              <button
+                onClick={() => setSelectedApplication(null)}
+                className="absolute top-2 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold transition"
+                title="Close"
+              >
+                &times;
+              </button>
+              <h3 className="text-2xl font-bold text-teal-700 mb-4">Application Details</h3>
+              <p><strong>Date:</strong> {selectedApplication.date || selectedApplication.appliedDate || 'N/A'}</p>
+              <p><strong>Job Role:</strong> {selectedApplication.role || 'N/A'}</p>
+              <p><strong>Company:</strong> {selectedApplication.company || 'N/A'}</p>
+              <p><strong>Status:</strong> {selectedApplication.status || 'N/A'}</p>
+              <p>
+                <strong>CV:</strong>{' '}
+                {selectedApplication.resume ? (
+                  <a
+                    href={`http://localhost:5000/${selectedApplication.resume}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 underline"
+                  >
+                    View CV
+                  </a>
+                ) : (
+                  'No CV uploaded'
+                )}
+              </p>
+              <p>
+                <strong>Cover Letter:</strong>{' '}
+                {selectedApplication.coverLetterFile ? (
+                  <a
+                    href={`http://localhost:5000/${selectedApplication.coverLetterFile}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-teal-600 underline"
+                  >
+                    View Cover Letter
+                  </a>
+                ) : selectedApplication.coverLetter ? (
+                  <span className="block mt-2 whitespace-pre-line">{selectedApplication.coverLetter}</span>
+                ) : (
+                  'No cover letter'
+                )}
+              </p>
             </div>
           </div>
         )}

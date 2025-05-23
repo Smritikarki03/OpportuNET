@@ -157,6 +157,7 @@ const Header = () => {
     if (isMarkingRead) return; // Prevent double-clicks
     
     try {
+      console.log('Notification clicked:', notification); // Debug log
       setIsMarkingRead(true);
       const storedAuth = localStorage.getItem("auth");
       if (!storedAuth) return;
@@ -180,10 +181,25 @@ const Header = () => {
       // Close the dropdown
       setNotificationDropdownVisible(false);
 
+      // For contact notifications, navigate to contact messages page
+      if (notification.type === 'contact') {
+        navigate('/admin/contact-messages');
+        return;
+      }
       // For review notifications, navigate to the company profile
       if (notification.type === 'review' && notification.companyId) {
         console.log('Navigating to company profile:', notification.companyId);
         navigate(`/company-prof/${notification.companyId}`, { state: { scrollToReviews: true } });
+      }
+      // For application notifications, navigate to profile page with correct section
+      else if (notification.type === 'application') {
+        const userRole = localStorage.getItem('userRole');
+        console.log('User role:', userRole); // Debug log
+        const scrollTo = userRole === 'jobseeker' ? 'appliedJobs' : 'jobApplicants';
+        console.log('Navigating to profile with scrollTo:', scrollTo); // Debug log
+        navigate('/profile', { state: { scrollTo } });
+      } else {
+        console.log('Unknown notification type:', notification.type); // Debug log
       }
     } catch (error) {
       console.error("Error handling notification:", error);
@@ -196,7 +212,9 @@ const Header = () => {
   return (
     <nav className="bg-teal-700 py-4 fixed top-0 w-full z-10">
       <div className="container mx-auto px-4 flex justify-between items-center">
-        <div className="text-2xl font-bold text-white">OpportuNET</div>
+        <div className="text-2xl font-bold text-white">
+          <Link to="/" className="font-bold text-2xl text-white">OpportuNET</Link>
+        </div>
         <ul className="flex space-x-6 items-center">
           <li>
             <Link to="/" className="text-white hover:underline">
@@ -288,7 +306,7 @@ const Header = () => {
                         </Link>
                       ) : (
                         <Link
-                          to="/create-company"
+                          to="/CompanySetupForm"
                           className="block px-4 py-2 hover:bg-teal-100 rounded"
                           onClick={() => setDropdownVisible(false)}
                         >

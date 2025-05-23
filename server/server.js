@@ -15,6 +15,8 @@ const app = express();
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
+const { checkJobStatus } = require('./routes/jobs');
+const contactRoutes = require('./routes/contact');
 
 // Connect to MongoDB
 connectDB();
@@ -69,6 +71,9 @@ app.use((req, res, next) => {
   next();
 });
 
+// Apply job expiry check to all requests
+app.use(checkJobStatus);
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/adminroute', adminRoutes);
@@ -77,6 +82,7 @@ app.use('/api/applications', applicationRoutes);
 app.use('/api/company', companyRoutes);
 app.use('/api/reviews', reviewsRouter);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/contact', contactRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {

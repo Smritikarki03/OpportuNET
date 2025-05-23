@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { FaFilePdf, FaFileUpload, FaMagic } from 'react-icons/fa';
+import Header from "../Components/Header";
 
 const ApplyPage = () => {
   const { id } = useParams();
@@ -140,6 +141,9 @@ const ApplyPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-100">
+      <Header />
+      <div style={{ height: '2.5rem' }} />
+      <br></br>
       <div className="container mx-auto p-6">
         <h1 className="text-4xl font-bold text-teal-700 text-center mb-8">
           Apply for {job.title}
@@ -199,6 +203,10 @@ const ApplyPage = () => {
               <FaMagic /> Generate CV
             </button>
           </div>
+          {/* Warning message before submit */}
+          <p className="text-red-600 font-semibold mb-4">
+            Note: Once you submit your application, it cannot be edited. Please review all details carefully before submitting.
+          </p>
           <button
             type="submit"
             className="w-full bg-teal-700 text-white px-4 py-3 rounded-xl font-semibold text-lg hover:bg-teal-800 transition duration-300 shadow-md hover:shadow-lg"

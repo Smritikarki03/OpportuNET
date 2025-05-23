@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import Header from "../Components/Header";
 import Footer from "../Components/Footer";
+import axios from "axios";
 
 const ContactPage = () => {
   const [formData, setFormData] = useState({
@@ -15,28 +16,15 @@ const ContactPage = () => {
     setFormData((prevData) => ({ ...prevData, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    // Submit form data to Formspree
-    fetch("https://formspree.io/f/xgvoddpr", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(formData),
-    })
-      .then((response) => {
-        if (response.ok) {
-          setStatus("Message sent successfully!"); // Success message
-          setFormData({ name: "", email: "", message: "" }); // Clear form after submit
-        } else {
-          throw new Error("Error submitting form");
-        }
-      })
-      .catch((error) => {
-        setStatus("Error sending message, please try again later."); // Error message
-      });
+    try {
+      await axios.post("http://localhost:5000/api/contact", formData);
+      setStatus("Message sent successfully!");
+      setFormData({ name: "", email: "", message: "" });
+    } catch (error) {
+      setStatus("Error sending message, please try again later.");
+    }
   };
 
   return (
@@ -47,7 +35,7 @@ const ContactPage = () => {
         <div className="container mx-auto px-4 py-12 text-center">
           <h1 className="text-4xl font-bold text-teal-900">Contact Us</h1>
           <p className="mt-2 text-lg text-teal-700">
-            We’re here to help you with any inquiries. Feel free to reach out to us!
+            We're here to help you with any inquiries. Feel free to reach out to us!
           </p>
         </div>
 

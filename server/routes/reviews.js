@@ -190,4 +190,27 @@ router.put('/:reviewId', authenticate, async (req, res) => {
   }
 });
 
+// Delete a review
+router.delete('/:reviewId', authenticate, async (req, res) => {
+  try {
+    const reviewId = req.params.reviewId;
+    // Validate reviewId is a valid ObjectId
+    if (!mongoose.Types.ObjectId.isValid(reviewId)) {
+      return res.status(400).json({ message: 'Invalid review ID format' });
+    }
+    const review = await Review.findById(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+    // Only the author can delete
+    if (review.userId.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Unauthorized to delete this review' });
+    }
+    await Review.findByIdAndDelete(reviewId);
+    res.json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting review', error: error.message });
+  }
+});
+
 module.exports = router; 

@@ -13,25 +13,17 @@ export default function Footer() {
             </p>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h3 className="text-xl font-semibold">Quick Links</h3>
-            <ul className="mt-2 space-y-2">
-              <li><a href="/jobs" className="hover:underline">Browse Jobs</a></li>
-              <li><a href="/companies" className="hover:underline">Top Companies</a></li>
-              <li><a href="/about" className="hover:underline">About Us</a></li>
-              <li><a href="/contact" className="hover:underline">Contact</a></li>
-            </ul>
-          </div>
+          {/* Spacer for center column (optional, can be empty or for future use) */}
+          <div></div>
 
-          {/* Contact Section */}
-          <div>
+          {/* Contact Section - right aligned on md+ */}
+          <div className="md:text-right flex flex-col items-center md:items-end">
             <h3 className="text-xl font-semibold">Contact Us</h3>
             <p className="mt-2 text-gray-300">📍 Kathmandu, Nepal</p>
             <p>📧 support@opportunet.com</p>
             <p>📞 +977-9800000000</p>
             {/* Social Media Icons (Placeholder) */}
-            <div className="mt-4 flex justify-center md:justify-start space-x-4">
+            <div className="mt-4 flex justify-center md:justify-end space-x-4">
               <a href="#" className="hover:text-gray-400">🌐</a>
               <a href="#" className="hover:text-gray-400">📘</a>
               <a href="#" className="hover:text-gray-400">🐦</a>

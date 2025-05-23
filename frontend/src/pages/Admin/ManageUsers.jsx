@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/auth";
 import { FaSearch, FaTrash, FaEye, FaFilter, FaUser, FaBuilding, FaCheck, FaTimes, FaEnvelope, FaPhone, FaCalendar, FaMapMarkerAlt, FaBriefcase, FaUniversity, FaFile, FaInfo, FaDownload, FaUserCheck, FaUsers, FaGlobe, FaStar } from "react-icons/fa";
 import Sidebar from "../../Components/Sidebar";
+import CompanyReviews from '../../Components/CompanyReviews';
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
@@ -168,44 +169,70 @@ const ManageUsers = () => {
 
       console.log('Sending approval request for user:', id);
       
-      const response = await fetch(`http://localhost:5000/api/admin/users/${id}/approve`, {
-        method: 'PUT',
+      const response = await fetch('http://localhost:5000/api/adminroute/approve-reject', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${auth.token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ employerId: id, action: 'approve' })
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setUsers(users.map(user => 
+          user._id === id 
+            ? { ...user, isApproved: true }
+            : user
+        ));
+        if (data.emailWarning) {
+          alert('Employer approved, but email could not be sent.');
+        } else {
+          alert('Employer approved successfully.');
+        }
+        fetchUsers();
+        setError(null);
+      } else {
+        throw new Error(data.message || 'Failed to approve employer');
+      }
+    } catch (err) {
+      console.error("Error approving employer:", err);
+      setError(err.message || "Failed to approve employer");
+      alert(err.message || "Failed to approve employer");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRejectEmployer = async (id) => {
+    if (!window.confirm("Are you sure you want to reject (delete) this employer?")) return;
+    try {
+      if (!auth?.token) {
+        navigate('/login');
+        return;
+      }
+      const response = await fetch(`http://localhost:5000/api/adminroute/users/${id}`, {
+        method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${auth.token}`,
           'Content-Type': 'application/json'
         }
       });
-
       if (!response.ok) {
-        let errorMessage = 'Failed to approve employer';
+        let errorMessage = 'Failed to reject employer';
         try {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-        } catch (e) {
-          console.error('Error parsing error response:', e);
-        }
+        } catch (e) {}
         throw new Error(errorMessage);
       }
-
-      const data = await response.json();
-      console.log('Approval response:', data);
-
-      // Update the user in the local state
-      setUsers(users.map(user => 
-        user._id === id 
-          ? { ...user, isApproved: true }
-          : user
-      ));
-
-      // Show success message
-      alert('Employer approved successfully');
-      
-      // Refresh the users list
+      setUsers(users.filter(user => user._id !== id));
+      alert('Admin rejected the employer.');
       fetchUsers();
     } catch (error) {
-      console.error("Error approving employer:", error);
-      setError(error.message || "Failed to approve employer");
-      alert(error.message || "Failed to approve employer");
+      console.error("Error rejecting employer:", error);
+      setError(error.message || "Failed to reject employer");
+      alert(error.message || "Failed to reject employer");
     }
   };
 
@@ -251,12 +278,12 @@ const ManageUsers = () => {
   };
 
   const filteredUsers = users.filter(user => {
+    // Exclude admins from the table
+    if (user.role && user.role.toLowerCase() === 'admin') return false;
     const matchesSearch = 
       user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
     const matchesFilter = filter === 'all' || user.role.toLowerCase() === filter.toLowerCase();
-    
     return matchesSearch && matchesFilter;
   });
 
@@ -334,132 +361,96 @@ const ManageUsers = () => {
           </div>
         )}
 
-            {/* Users Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="col-span-full flex justify-center py-12">
-                  <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
-                    </div>
-              ) : filteredUsers.length === 0 ? (
-                <div className="col-span-full text-center py-12">
-                  <div className="text-gray-500 text-lg">No users found</div>
-                </div>
-              ) : (
-                filteredUsers.map((user) => (
-                  <div key={user._id} className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden">
-                    <div className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className={`p-3 rounded-full ${
-                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100' : 'bg-blue-100'
-                          }`}>
-                            {user.role.toLowerCase() === 'employer' ? (
-                              <FaBuilding className="w-6 h-6 text-purple-600" />
-                            ) : (
-                              <FaUser className="w-6 h-6 text-blue-600" />
-                            )}
+            {/* Users Table */}
+            <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 mt-6">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-100">
+                    {loading ? (
+                      <tr>
+                        <td colSpan="6" className="px-6 py-12 text-center">
+                          <div className="flex justify-center">
+                            <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div>
                           </div>
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-900">{user.name}</h3>
-                            <p className="text-sm text-gray-500">{user.email}</p>
-                          {user.phone && (
-                              <p className="text-sm text-gray-500 mt-1">{user.phone}</p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleViewProfile(user)}
-                            className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
-                            title="View Profile"
-                          >
-                            <FaEye className="w-5 h-5" />
-                          </button>
-                            {user.role.toLowerCase() === 'employer' && user.isCompanySetup && (
-                              <button
-                                onClick={() => handleViewCompany(user)}
-                                className="p-2 text-gray-400 hover:text-blue-600 transition-colors duration-200"
-                                title="View Company Profile"
-                              >
-                                <FaBuilding className="w-5 h-5" />
-                              </button>
-                            )}
-                          {user.role.toLowerCase() === 'employer' && !user.isApproved && (
-                            <button
-                              onClick={() => handleApproveEmployer(user._id)}
-                              className="p-2 text-gray-400 hover:text-green-600 transition-colors duration-200"
-                              title="Approve Employer"
-                            >
-                              <FaUserCheck className="w-5 h-5" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteUser(user._id)}
-                            className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
-                            title="Delete User"
-                          >
-                            <FaTrash className="w-5 h-5" />
-                          </button>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-4 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-gray-500">Role</span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'
-                      }`}>
-                        {user.role}
-                      </span>
-                        </div>
-                        {user.role.toLowerCase() === 'jobseeker' && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">Profile Status</span>
-                            {(() => {
-                              const { isComplete, message } = checkProfileCompletion(user);
-                              return (
-                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                                  isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                                }`}>
-                                  {message}
-                                </span>
-                              );
-                            })()}
-                          </div>
-                        )}
-                        {user.role.toLowerCase() === 'employer' && (
-                          <>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Status</span>
-                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
-                      }`}>
-                        {user.isApproved ? 'Approved' : 'Pending'}
-                      </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Company</span>
-                              {user.isCompanySetup ? (
-                                <button
-                                  onClick={() => handleViewCompany(user)}
-                                  className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 transition-colors flex items-center gap-1"
-                                >
-                                  <FaBuilding className="w-3 h-3" />
-                                  View Company
-                                </button>
+                        </td>
+                      </tr>
+                    ) : filteredUsers.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" className="px-6 py-12 text-center">
+                          <div className="text-gray-500 text-lg">No users found</div>
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredUsers.map((user) => {
+                        const { isComplete, message } = checkProfileCompletion(user);
+                        return (
+                          <tr key={user._id} className="hover:bg-gray-50 transition-colors duration-150">
+                            <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">{user.name}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">{user.email}</td>
+                            <td className="px-6 py-4 whitespace-nowrap text-gray-700">{user.phone || '-'}</td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.role.toLowerCase() === 'employer' ? 'bg-purple-100 text-purple-800' : 'bg-blue-100 text-blue-800'}`}>{user.role}</span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {user.role.toLowerCase() === 'jobseeker' ? (
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${isComplete ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{message}</span>
                               ) : (
-                                <span className="px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                  No Company
-                        </span>
+                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${user.isApproved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>{user.isApproved ? 'Approved' : 'Pending'}</span>
                               )}
-                            </div>
-                          </>
-                      )}
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex space-x-2">
+                                <button
+                                  onClick={() => handleViewProfile(user)}
+                                  className="p-2 text-gray-400 hover:text-teal-600 transition-colors duration-200"
+                                  title="View Profile"
+                                >
+                                  <FaEye className="w-5 h-5" />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteUser(user._id)}
+                                  className="p-2 text-gray-400 hover:text-red-600 transition-colors duration-200"
+                                  title="Delete User"
+                                >
+                                  <FaTrash className="w-5 h-5" />
+                                </button>
+                                {user.role.toLowerCase() === 'employer' && !user.isApproved && (
+                                  <>
+                                    <button
+                                      onClick={() => handleApproveEmployer(user._id)}
+                                      className="p-2 text-green-500 hover:text-green-700 transition-colors duration-200"
+                                      title="Approve Employer"
+                                    >
+                                      <FaCheck className="w-5 h-5" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectEmployer(user._id)}
+                                      className="p-2 text-red-500 hover:text-red-700 transition-colors duration-200"
+                                      title="Reject Employer"
+                                    >
+                                      <FaTimes className="w-5 h-5" />
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>
@@ -818,114 +809,77 @@ const ManageUsers = () => {
                   {/* Company Logo */}
                   <div className="absolute -bottom-12 left-1/2 transform -translate-x-1/2">
                     <div className="w-24 h-24 rounded-full shadow-lg overflow-hidden bg-white border-4 border-white">
-                      {companyProfile.logo ? (
-                        <img 
-                          src={companyProfile.logo} 
-                          alt={companyProfile.name} 
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                          <FaBuilding className="w-12 h-12 text-gray-400" />
-                        </div>
-                      )}
+                      {(() => {
+                        let logoSrc = 'https://via.placeholder.com/150';
+                        if (companyProfile.logo) {
+                          if (companyProfile.logo.startsWith('http')) {
+                            logoSrc = companyProfile.logo;
+                          } else if (companyProfile.logo.startsWith('/Uploads')) {
+                            logoSrc = `http://localhost:5000${companyProfile.logo}`;
+                          } else {
+                            logoSrc = `http://localhost:5000/Uploads/${companyProfile.logo}`;
+                          }
+                        }
+                        return (
+                          <img 
+                            src={logoSrc} 
+                            alt={companyProfile.name} 
+                            className="w-full h-full object-cover"
+                          />
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
 
-                {/* Company Content */}
-                <div className="px-8 pb-8">
-                  {/* Company Header Info */}
-                  <div className="text-center pt-16 pb-8">
+                {/* Main Content */}
+                <div className="px-8 pb-8 pt-16">
+                  <div className="text-center pt-4 pb-8">
                     <h2 className="text-2xl font-bold text-gray-900 mb-1">{companyProfile.name}</h2>
                     <p className="text-gray-600">{companyProfile.industry}</p>
-                    
-                    {/* Rating Stars */}
-                    <div className="flex items-center justify-center mt-4 space-x-1">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <FaStar 
-                          key={star}
-                          className="w-5 h-5 text-gray-300"
-                        />
-                      ))}
-                      <span className="text-gray-600 ml-2">No reviews yet</span>
-                    </div>
                   </div>
-
-                  {/* About Section */}
-                  <div className="bg-white rounded-lg p-6 shadow-sm mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">About {companyProfile.name}</h3>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Company Details */}
-                      <div className="space-y-4">
-                        <div className="flex items-center text-gray-600">
-                          <FaMapMarkerAlt className="w-5 h-5 mr-3 text-teal-600" />
-                          <div>
-                            <p className="font-medium text-gray-900">Location</p>
-                            <p>{companyProfile.location}</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center text-gray-600">
-                          <FaUsers className="w-5 h-5 mr-3 text-teal-600" />
-                          <div>
-                            <p className="font-medium text-gray-900">Employees</p>
-                            <p>{companyProfile.employeeCount} Employees</p>
-                          </div>
-                        </div>
-
-                        <div className="flex items-center text-gray-600">
-                          <FaCalendar className="w-5 h-5 mr-3 text-teal-600" />
-                          <div>
-                            <p className="font-medium text-gray-900">Established</p>
-                            <p>{new Date(companyProfile.establishedDate).toLocaleDateString()}</p>
-                          </div>
-                        </div>
-
-                        {companyProfile.website && (
-                          <div className="flex items-center text-gray-600">
-                            <FaGlobe className="w-5 h-5 mr-3 text-teal-600" />
-                            <div>
-                              <p className="font-medium text-gray-900">Website</p>
-                              <a 
-                                href={companyProfile.website}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-teal-600 hover:underline"
-                              >
-                                {companyProfile.website}
-                              </a>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Description */}
-                      <div className="space-y-4">
-                        <div className="flex items-start text-gray-600">
-                          <FaInfo className="w-5 h-5 mr-3 text-teal-600 mt-1" />
-                          <div>
-                            <p className="font-medium text-gray-900 mb-2">Description</p>
-                            <p className="text-gray-600">{companyProfile.description}</p>
-                          </div>
-                        </div>
-                      </div>
+                  {/* Company Info Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6 justify-items-center">
+                    <div className="text-center">
+                      <h3 className="text-sm font-medium text-gray-500">Industry</h3>
+                      <p className="mt-1">{companyProfile.industry}</p>
                     </div>
+                    <div className="text-center">
+                      <h3 className="text-sm font-medium text-gray-500">Location</h3>
+                      <p className="mt-1">{companyProfile.location}</p>
+                    </div>
+                    <div className="text-center">
+                      <h3 className="text-sm font-medium text-gray-500">Established</h3>
+                      <p className="mt-1">{new Date(companyProfile.establishedDate).toLocaleDateString()}</p>
+                    </div>
+                    {companyProfile.employeeCount && (
+                      <div className="text-center">
+                        <h3 className="text-sm font-medium text-gray-500">Employees</h3>
+                        <p className="mt-1">{companyProfile.employeeCount}</p>
+                      </div>
+                    )}
+                    {companyProfile.website && (
+                      <div className="md:col-span-2 text-center">
+                        <h3 className="text-sm font-medium text-gray-500">Website</h3>
+                        <a
+                          href={companyProfile.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-1 text-teal-600 hover:text-teal-800"
+                        >
+                          {companyProfile.website}
+                        </a>
+                      </div>
+                    )}
                   </div>
-
+                  {/* Description Section */}
+                  <div className="bg-white rounded-lg shadow p-6 mb-6">
+                    <h2 className="text-xl font-semibold mb-4">Description</h2>
+                    <p className="text-gray-700">{companyProfile.description}</p>
+                  </div>
                   {/* Reviews Section */}
-                  <div className="bg-white rounded-lg p-6 shadow-sm">
-                    <div className="flex justify-between items-center mb-6">
-                      <h3 className="text-lg font-semibold text-gray-900">Company Reviews</h3>
-                    </div>
-                    
-                    <div className="text-center text-gray-600 py-8">
-                      <p>No reviews yet for this company.</p>
-                      <button className="mt-4 px-6 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-700 transition-colors">
-                        Add a Review
-                      </button>
-                    </div>
+                  <div className="bg-white rounded-lg shadow p-6">
+                    <CompanyReviews companyId={companyProfile._id} readOnly={true} hideHeading={true} />
                   </div>
                 </div>
               </div>

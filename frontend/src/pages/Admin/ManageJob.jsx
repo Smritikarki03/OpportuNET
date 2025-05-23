@@ -230,7 +230,7 @@ const ManageJob = () => {
                     <option value="all">All Jobs</option>
                     <option value="Active">Active</option>
                     <option value="Inactive">Inactive</option>
-                    <option value="rejected">Rejected</option>
+                    {/* <option value="rejected">Rejected</option> */}
                   </select>
                   <FaFilter className="absolute left-4 top-3.5 text-gray-400" />
                 </div>
@@ -355,30 +355,6 @@ const ManageJob = () => {
                                 title="View Job"
                               >
                                 <FaEye className="w-5 h-5" />
-                              </button>
-                              {job.status === 'Active' ? (
-                                <button
-                                  onClick={() => handleStatusChange(job._id, 'Inactive')}
-                                  className="text-yellow-600 hover:text-yellow-900 transition-colors duration-200 p-2 hover:bg-yellow-50 rounded-lg"
-                                  title="Deactivate Job"
-                                >
-                                  <FaTimes className="w-5 h-5" />
-                                </button>
-                              ) : (
-                                <button
-                                  onClick={() => handleStatusChange(job._id, 'Active')}
-                                  className="text-green-600 hover:text-green-900 transition-colors duration-200 p-2 hover:bg-green-50 rounded-lg"
-                                  title="Activate Job"
-                                >
-                                  <FaCheck className="w-5 h-5" />
-                                </button>
-                              )}
-                              <button
-                                onClick={() => handleDeleteJob(job._id)}
-                                className="text-rose-600 hover:text-rose-900 transition-colors duration-200 p-2 hover:bg-rose-50 rounded-lg"
-                                title="Delete Job"
-                              >
-                                <FaTrash className="w-5 h-5" />
                               </button>
                             </div>
                           </td>
