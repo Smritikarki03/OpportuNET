@@ -22,7 +22,7 @@ const sendEmployerStatusEmail = async (email, status) => {
     text = `Congratulations, your account has been approved by the admin! You can now log in to your account using the following link: ${link}`;
     html = `<p>Congratulations, your account has been approved by the admin!</p>
             <p>You can now log in to your account using the following link: 
-            <a href="${link}" style="background-color:#28a745;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Login</a></p>`;
+            <a href="${link}" style="background-color:#000000;color:white;padding:10px 20px;text-decoration:none;border-radius:5px;">Login</a></p>`;
   } else if (status === "rejected") {
     subject = "Your Employer Account has been Rejected";
     text = "Your employer account has been rejected by the admin. Please check your details and try again if you believe this was a mistake.";
@@ -68,15 +68,7 @@ const adminApproveRejectEmployer = async (req, res) => {
         notification.read = true;
         await notification.save();
       }
-      // Create a notification for admin about approval
-      await Notification.create({
-        message: `Employer ${employer.name} has been approved by admin.`,
-        adminId: req.user._id,
-        employerId: employer._id,
-        type: 'employer_approval',
-        recipient: req.user._id,
-        read: false
-      });
+      // Do NOT create a new notification for approval
       let emailWarning = false;
       try {
         await sendEmployerStatusEmail(employer.email, "approved");
@@ -101,15 +93,7 @@ const adminApproveRejectEmployer = async (req, res) => {
       if (notification) {
         await Notification.deleteOne({ _id: notification._id });
       }
-      // Create a notification for admin about rejection
-      await Notification.create({
-        message: `Employer ${employer.name} has been rejected by admin.`,
-        adminId: req.user._id,
-        employerId: employer._id,
-        type: 'employer_approval',
-        recipient: req.user._id,
-        read: false
-      });
+      // Do NOT create a new notification for rejection
       return res.status(200).json({ message: "Employer registration has been rejected.", emailWarning });
     } else {
       return res.status(400).json({ message: "Invalid action. Must be either 'approve' or 'reject'." });

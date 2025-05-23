@@ -753,32 +753,6 @@ const ManageUsers = () => {
                   </div>
                 </div>
               </div>
-
-              {/* Resume section with error handling */}
-              {selectedUser.role.toLowerCase() === 'jobseeker' && (
-                <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-3">Resume</h3>
-                  <div className="space-y-2">
-                    <div className="flex items-start space-x-3">
-                      <FaFile className="text-gray-400 mt-1" />
-                      <div>
-                        <button
-                          onClick={() => handleViewResume(selectedUser.resume)}
-                          className="text-sm text-teal-600 hover:text-teal-800 hover:underline flex items-center space-x-1"
-                        >
-                          <FaEye className="w-4 h-4" />
-                          <span>View Resume</span>
-                        </button>
-                        {resumeError && (
-                          <p className="text-sm text-red-600 mt-1">
-                            {resumeError}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
         </div>

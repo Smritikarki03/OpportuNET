@@ -20,12 +20,11 @@ import ContactPage from './pages/Contact';
 import CV from './pages/CV';
 import AdminNotifications from './Components/AdminNotifications';
 import JobPosting from './Components/JobPost';
-import CompanyProfile from './Components/CompanyProfile'; 
+// import CompanyProfile from './Components/CompanyProfile'; 
 // import EditCompanyProfile from './pages/Employer/EditCompanyProfile'; // Add this
 import JobDescription from './pages/JobDescription';
 import ApplyPage from './pages/Apply';
 import ManageJobs from './pages/Admin/ManageJob';
-import CompanySU from './Components/CompanySU';
 import ManageUsers from './pages/Admin/ManageUsers';
 import CompanySetupForm from './Components/CompanySetuoForm';
 import CompanyProf from './Components/CompanyProf';
@@ -34,6 +33,7 @@ import EditJob from './pages/Employer/EditJob';
 import Reviews from './pages/Admin/Reviews';
 import Applications from './pages/Admin/Applications';
 import ContactMessages from './pages/Admin/ContactMessages';
+
 
 const App = () => {
   return (
@@ -59,13 +59,10 @@ const App = () => {
           <Route path="/CV" element={<CV/>} />
           <Route path="/AdminNotifications" element={<AdminNotifications/>} />
           <Route path="/post-job" element={<JobPosting/>} />
-          <Route path="/employer/profile" element={<CompanySU/>} />
           <Route path="/description/:id" element={<JobDescription />} />
           <Route path="/apply/:id" element={<ApplyPage />} />
           <Route path="/ManageJob" element={<ManageJobs />} />
-          <Route path="/CompanyProfile/:id" element={<CompanyProfile />} />
-         
-          <Route path="/ManageUsers" element={<ManageUsers />} />
+?          <Route path="/ManageUsers" element={<ManageUsers />} />
           <Route path="/company-prof/:id?" element={<CompanyProf />} />
           <Route path="/CompanySetupForm" element={<CompanySetupForm />} /> 
           <Route path="/EditCompanyProfile/:id" element={<EditCompanyProfile />} /> 

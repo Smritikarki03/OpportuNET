@@ -37,7 +37,7 @@ exports.register = async (req, res) => {
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists, please login instead" });
+      return res.status(400).json({ message: "User already exists, please login" });
     }
 
     const hashedPassword = await bcrypt.hash(password.trim(), 10);
@@ -141,7 +141,7 @@ exports.employerRegister = async (req, res) => {
         to: user.email,
         subject: "Your Employer Registration is Pending Approval",
         text: "Thank you for registering as an employer on OpportuNET. Your account is pending admin approval. You will receive an email once your account is approved or rejected.",
-        html: "<p>Thank you for registering as an employer on <b>OpportuNET</b>.</p><p>Your account is <b>pending admin approval</b>. You will receive an email once your account is approved or rejected.</p>"
+        html: "<div style='color:#000000;'><p>Thank you for registering as an employer on <b>OpportuNET</b>.</p><p>Your account is <b>pending admin approval</b>. You will receive an email once your account is approved or rejected.</p></div>"
       };
       await transporter.sendMail(mailOptions);
     } catch (error) {
@@ -159,23 +159,29 @@ exports.employerRegister = async (req, res) => {
     await company.save();
     console.log(`Company created for userId: ${user._id}, company: ${JSON.stringify(company)}`);
 
-    const admins = await User.find({ role: "admin" });
-    if (!admins || admins.length === 0) {
-      return res.status(500).json({ message: "Admin not found. Unable to send notification." });
+    // Find the admin user (just like contact message notification)
+    const admin = await User.findOne({ role: 'admin' });
+    if (!admin) {
+      console.error('No admin user found in the database');
+      return res.status(201).json({ success: true, message: 'Employer registered, but no admin notification sent.' });
     }
 
-    // Create a notification for each admin
-    for (const admin of admins) {
-      const notification = new Notification({
-        message: `A new Employer ${fullname} has registered and is awaiting approval.`,
-        adminId: admin._id,
-        employerId: user._id,
-        recipient: admin._id,
-        type: 'employer_approval',
-        read: false
-      });
-      await notification.save();
-    }
+    // Create notification for admin (same as contact message notification)
+    const notification = await Notification.create({
+      message: `A new Employer ${fullname} has registered and is awaiting approval.`,
+      recipient: admin._id,
+      adminId: admin._id,
+      employerId: user._id,
+      read: false,
+      type: 'employer_approval'
+    });
+    console.log('Created employer approval notification:', {
+      id: notification._id,
+      message: notification.message,
+      recipient: notification.recipient,
+      adminId: notification.adminId,
+      type: notification.type
+    });
 
     res.status(201).json({
       success: true,

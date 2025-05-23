@@ -145,9 +145,10 @@ const BrowseJobs = () => {
                 className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="all">All Job Types</option>
-                <option value="Full Time">Full Time</option>
-                <option value="Part Time">Part Time</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Part-time">Part-time</option>
                 <option value="Contract">Contract</option>
+                <option value="Internship">Internship</option>
               </select>
             </div>
 

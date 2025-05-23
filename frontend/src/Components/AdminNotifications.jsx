@@ -239,6 +239,10 @@ const AdminNotifications = () => {
                 <li
                   key={notification._id}
                   className="p-6 rounded-2xl shadow border transition-colors cursor-pointer bg-yellow-50 border-yellow-200"
+                  onClick={() => {
+                    handleNotificationClick(notification);
+                    window.location.href = '/admin/manage-users';
+                  }}
                 >
                   <div className="flex items-center gap-2 text-lg font-semibold text-yellow-900">
                     <span role="img" aria-label="Employer">🏢</span> Employer Approval

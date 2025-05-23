@@ -2,14 +2,14 @@ import React, { useState } from "react";
 
 const SignUpEmployer = () => {
   const [formData, setFormData] = useState({
-    fullname: "",           // Matches backend
+    fullname: "",           
     email: "",
-    contactnumber: "",      // Matches backend
+    contactnumber: "",      
     password: "",
-    confirmpassword: "",    // Matches backend
-    companyname: "",        // Matches backend
+    confirmpassword: "",   
+    companyname: "",        
     industry: "",
-    companylocation: "",    // Matches backend
+    companylocation: "",    
   });
 
   const [error, setError] = useState("");
