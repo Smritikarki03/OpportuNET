@@ -97,8 +97,8 @@ router.post('/', authenticate, handleMulterUpload, async (req, res) => {
 
     // Check if user has already applied
     const existingApplication = await Application.findOne({ jobId, userId });
-    if (existingApplication) {
-      console.log('User already applied:', { jobId, userId });
+    if (existingApplication && existingApplication.status !== 'REJECTED') {
+      console.log('User already applied and not rejected:', { jobId, userId });
       return res.status(400).json({ message: 'You have already applied for this job' });
     }
 

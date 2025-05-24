@@ -443,6 +443,32 @@ const ProfilePage = () => {
     }
   };
 
+  const handleArchiveByJobAndApplicant = async (jobId, applicantId) => {
+    try {
+      const authData = localStorage.getItem("auth");
+      const { token } = JSON.parse(authData);
+      // 1. Fetch the application by jobId and userId
+      const response = await axios.get(
+        `http://localhost:5000/api/applications/single`,
+        {
+          params: { jobId, userId: applicantId },
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const applicationId = response.data._id;
+      // 2. Archive the application
+      await axios.put(
+        `http://localhost:5000/api/applications/${applicationId}/archive`,
+        { archived: true },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchUserData();
+      alert("Application archived successfully!");
+    } catch (error) {
+      alert("Could not archive application.");
+    }
+  };
+
   if (isLoading) return <div className="text-center text-gray-500">Loading...</div>;
   if (error) return <div className="text-center text-red-500">{error}</div>;
   if (!user) return <div className="text-center text-gray-500">Please log in to view your profile.</div>;
@@ -853,6 +879,7 @@ const ProfilePage = () => {
                                   type="datetime-local"
                                   className="border rounded px-2 py-1 text-sm mt-1"
                                   value={interviewTimeInput}
+                                  min={new Date().toISOString().slice(0, 16)}
                                   onChange={e => setInterviewTimeInput(e.target.value)}
                                 />
                               )}
@@ -882,7 +909,13 @@ const ProfilePage = () => {
                               <button
                                 className="text-yellow-600 hover:text-yellow-800 font-medium text-sm"
                                 onClick={async () => {
-                                  await handleArchiveApplication(application._id, !application.archived);
+                                  if (application._id) {
+                                    await handleArchiveApplication(application._id, true);
+                                  } else if (job._id && (application.applicantId || application.userId)) {
+                                    await handleArchiveByJobAndApplicant(job._id, application.applicantId || application.userId);
+                                  } else {
+                                    alert('Cannot archive: missing application ID and job/applicant info.');
+                                  }
                                 }}
                               >
                                 {application.archived ? 'Unarchive' : 'Archive'}
@@ -1150,7 +1183,7 @@ const ProfilePage = () => {
 
         {selectedApplication && (
           <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full border border-gray-200 relative">
+            <div className="bg-white rounded-xl shadow-2xl p-6 max-w-sm w-full border border-gray-200 relative" style={{ maxHeight: '90vh' }}>
               <button
                 onClick={() => setSelectedApplication(null)}
                 className="absolute top-2 right-4 text-gray-400 hover:text-gray-700 text-2xl font-bold transition"
@@ -1159,42 +1192,44 @@ const ProfilePage = () => {
                 &times;
               </button>
               <h3 className="text-2xl font-bold text-teal-700 mb-4">Application Details</h3>
-              <p><strong>Date:</strong> {selectedApplication.date || selectedApplication.appliedDate || 'N/A'}</p>
-              <p><strong>Job Role:</strong> {selectedApplication.role || 'N/A'}</p>
-              <p><strong>Company:</strong> {selectedApplication.company || 'N/A'}</p>
-              <p><strong>Status:</strong> {selectedApplication.status || 'N/A'}</p>
-              <p>
-                <strong>CV:</strong>{' '}
-                {selectedApplication.resume ? (
-                  <a
-                    href={`http://localhost:5000/${selectedApplication.resume}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-600 underline"
-                  >
-                    View CV
-                  </a>
-                ) : (
-                  'No CV uploaded'
-                )}
-              </p>
-              <p>
-                <strong>Cover Letter:</strong>{' '}
-                {selectedApplication.coverLetterFile ? (
-                  <a
-                    href={`http://localhost:5000/${selectedApplication.coverLetterFile}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-teal-600 underline"
-                  >
-                    View Cover Letter
-                  </a>
-                ) : selectedApplication.coverLetter ? (
-                  <span className="block mt-2 whitespace-pre-line">{selectedApplication.coverLetter}</span>
-                ) : (
-                  'No cover letter'
-                )}
-              </p>
+              <div className="overflow-y-auto" style={{ maxHeight: '400px' }}>
+                <p><strong>Date:</strong> {selectedApplication.date || selectedApplication.appliedDate || 'N/A'}</p>
+                <p><strong>Job Role:</strong> {selectedApplication.role || 'N/A'}</p>
+                <p><strong>Company:</strong> {selectedApplication.company || 'N/A'}</p>
+                <p><strong>Status:</strong> {selectedApplication.status || 'N/A'}</p>
+                <p>
+                  <strong>CV:</strong>{' '}
+                  {selectedApplication.resume ? (
+                    <a
+                      href={`http://localhost:5000/${selectedApplication.resume}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-600 underline"
+                    >
+                      View CV
+                    </a>
+                  ) : (
+                    'No CV uploaded'
+                  )}
+                </p>
+                <p>
+                  <strong>Cover Letter:</strong>{' '}
+                  {selectedApplication.coverLetterFile ? (
+                    <a
+                      href={`http://localhost:5000/${selectedApplication.coverLetterFile}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-teal-600 underline"
+                    >
+                      View Cover Letter
+                    </a>
+                  ) : selectedApplication.coverLetter ? (
+                    <span className="block mt-2 whitespace-pre-line">{selectedApplication.coverLetter}</span>
+                  ) : (
+                    'No cover letter'
+                  )}
+                </p>
+              </div>
             </div>
           </div>
         )}

@@ -13,6 +13,8 @@ const ApplyPage = () => {
   const [loading, setLoading] = useState(true);
   const [coverLetterFile, setCoverLetterFile] = useState(null);
   const [userName, setUserName] = useState("");
+  const [resumePreviewUrl, setResumePreviewUrl] = useState(null);
+  const [coverLetterPreviewUrl, setCoverLetterPreviewUrl] = useState(null);
 
   const userRole = localStorage.getItem("userRole");
 
@@ -131,6 +133,26 @@ const ApplyPage = () => {
     window.open('/CV', '_blank');
   };
 
+  const handleResumeChange = (e) => {
+    const file = e.target.files[0];
+    setResume(file);
+    if (file) {
+      setResumePreviewUrl(URL.createObjectURL(file));
+    } else {
+      setResumePreviewUrl(null);
+    }
+  };
+
+  const handleCoverLetterFileChange = (e) => {
+    const file = e.target.files[0];
+    setCoverLetterFile(file);
+    if (file) {
+      setCoverLetterPreviewUrl(URL.createObjectURL(file));
+    } else {
+      setCoverLetterPreviewUrl(null);
+    }
+  };
+
   if (loading) {
     return <div className="text-center text-teal-700">Loading...</div>;
   }
@@ -177,8 +199,20 @@ const ApplyPage = () => {
               name="coverLetterFile"
               accept=".pdf"
               className="w-full p-2 border rounded-lg"
-              onChange={(e) => setCoverLetterFile(e.target.files[0])}
+              onChange={handleCoverLetterFileChange}
             />
+            {coverLetterFile && (
+              <div>
+                <span>{coverLetterFile.name}</span>
+                <button
+                  type="button"
+                  className="ml-2 text-teal-600 underline"
+                  onClick={() => window.open(coverLetterPreviewUrl, '_blank')}
+                >
+                  View
+                </button>
+              </div>
+            )}
           </div>
           <div className="mb-6 flex flex-col md:flex-row md:items-center gap-4">
             <div className="flex-1">
@@ -192,8 +226,20 @@ const ApplyPage = () => {
                 accept=".pdf"
                 className="w-full p-2 border rounded-lg"
                 required
-                onChange={(e) => setResume(e.target.files[0])}
+                onChange={handleResumeChange}
               />
+              {resume && (
+                <div>
+                  <span>{resume.name}</span>
+                  <button
+                    type="button"
+                    className="ml-2 text-teal-600 underline"
+                    onClick={() => window.open(resumePreviewUrl, '_blank')}
+                  >
+                    View
+                  </button>
+                </div>
+              )}
             </div>
             <button
               type="button"

@@ -113,7 +113,7 @@ exports.employerRegister = async (req, res) => {
 
     const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ message: "User already exists, please login instead" });
+      return res.status(400).json({ message: "User registered, please login instead" });
     }
 
     const hashedPassword = await bcrypt.hash(password.trim(), 10);

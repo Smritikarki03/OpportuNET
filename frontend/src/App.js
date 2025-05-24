@@ -9,7 +9,6 @@ import SignUpSelectionPage from './pages/auth/SignupSelectionPage';
 import SignUpEmployer from './pages/auth/employerSignup';
 import ForgotPassword from './pages/auth/Forgotpw';
 import ProfilePage from './pages/JobSeeker/ProfilePage';
-import RatingsAndReviews from './pages/Ratings';
 import EditProfile from './pages/JobSeeker/EditProfilePage';
 // import EditEmployerProfile from './pages/Employer/CompanyProfile';
 import ResetPassword from './pages/auth/ResetPW';
@@ -48,7 +47,6 @@ const App = () => {
           <Route path="/selectSignup" element={<SignUpSelectionPage />} />
           <Route path="/Forgotpw" element={<ForgotPassword/>} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/Ratings" element={<RatingsAndReviews/>} />
           <Route path="/EditProfilePage" element={<EditProfile/>} />
           {/* <Route path="/EditEP" element={<EditEmployerProfile/>} /> */}
           <Route path="/reset-password" element={<ResetPassword/>} />

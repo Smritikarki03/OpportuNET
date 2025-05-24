@@ -58,7 +58,7 @@ const ContactPage = () => {
                   </a>
                 </p>
                 <p className="text-lg">
-                  Phone: <span className="text-teal-600">+123 456 7890</span>
+                  Phone: <span className="text-teal-600">9848564992</span>
                 </p>
                 <p className="text-lg">
                   Address: <span className="text-teal-600">123 Job Avenue, Kathmandu, Nepal</span>
@@ -67,9 +67,8 @@ const ContactPage = () => {
 
               {/* Social Media Links */}
               <div className="flex space-x-6 mt-6">
-                {/* Replace with actual links and ensure Font Awesome is included */}
-                <a
-                  href="https://facebook.com" // Replace with actual link
+                {/* Replace with actual links and ensure Font Awesome is included */} <a
+                  href="https://facebook.com" 
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-teal-600 hover:text-teal-500"

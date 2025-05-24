@@ -22,7 +22,7 @@ const JobDescription = () => {
         const authData = localStorage.getItem("auth");
         if (authData) {
           const { token, user } = JSON.parse(authData);
-          const userResponse = await axios.get("http://localhost:5000/api/auth/userinfo", {
+          const userResponse = await axios.get("http://localhost:5000/api/auth/userInfo", {
             headers: { Authorization: `Bearer ${token}` }
           });
           
@@ -31,12 +31,12 @@ const JobDescription = () => {
             console.log('Job being viewed:', response.data);
             console.log('User appliedJobs:', userResponse.data.appliedJobs);
             const appliedJob = userResponse.data.appliedJobs.find(job => {
-              // Handle jobId as string or object
               if (job.jobId) {
-                if (typeof job.jobId === 'string' && (job.jobId === response.data._id || job.jobId === response.data.id)) {
+                // Always compare as strings
+                if (job.jobId.toString() === response.data._id.toString()) {
                   return true;
                 }
-                if (typeof job.jobId === 'object' && job.jobId !== null && (job.jobId._id === response.data._id || job.jobId === response.data._id)) {
+                if (typeof job.jobId === 'object' && job.jobId !== null && job.jobId._id && job.jobId._id.toString() === response.data._id.toString()) {
                   return true;
                 }
               }
